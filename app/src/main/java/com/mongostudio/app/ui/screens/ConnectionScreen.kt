@@ -1,10 +1,15 @@
 package com.mongostudio.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,8 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mongostudio.app.data.model.SavedConnection
-import com.mongostudio.app.ui.components.ConfirmDialog
-import com.mongostudio.app.ui.components.TopHeader
+import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
@@ -34,6 +38,7 @@ fun ConnectionScreen(
     var clusterName by remember { mutableStateOf("Local MongoDB") }
     var saveConnection by remember { mutableStateOf(true) }
     var itemToDelete by remember { mutableStateOf<SavedConnection?>(null) }
+    var showPresetsDropdown by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isConnectedToCluster) {
         if (uiState.isConnectedToCluster) {
@@ -44,8 +49,8 @@ fun ConnectionScreen(
     Scaffold(
         topBar = {
             TopHeader(
-                title = "MongoStudio Mobile",
-                subtitle = "Standalone Native Client",
+                title = "MongoStudio",
+                subtitle = "Material 3 Expressive",
                 isConnectedToCluster = false,
                 onSettingsClick = onNavigateToSettings,
                 onRefreshClick = {
@@ -59,48 +64,66 @@ fun ConnectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Standalone Architecture Badge
+            // Hero Expressive Card
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(SurfaceDark)
-                        .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
-                        .padding(14.dp)
+                        .clip(AsymmetricCardShape)
+                        .background(SurfaceContainer)
+                        .border(1.dp, CardBorderDark, AsymmetricCardShape)
+                        .padding(20.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(EmeraldContainer),
-                            contentAlignment = Alignment.Center
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Shield,
-                                contentDescription = null,
-                                tint = EmeraldLight,
-                                modifier = Modifier.size(20.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldContainer)
+                                    .border(1.dp, EmeraldLight.copy(alpha = 0.4f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Dataset,
+                                    contentDescription = null,
+                                    tint = EmeraldVibrant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            ExpressiveLiveBadge(
+                                label = "100% Standalone",
+                                isActive = true,
+                                activeColor = EmeraldLight
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "100% Standalone & Direct",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "Zero middleware servers. Connects directly to MongoDB Atlas or self-hosted clusters with built-in DoH SRV resolver & AES-256 encrypted vault.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary
-                            )
-                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = "Direct MongoDB Engine",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                            color = TextPrimary,
+                            letterSpacing = (-0.5).sp
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Native wire-protocol connection straight to MongoDB Atlas or local clusters. Zero middleware or backend server needed.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
                     }
                 }
             }
@@ -109,24 +132,33 @@ fun ConnectionScreen(
             if (uiState.errorMessage != null) {
                 item {
                     Surface(
-                        color = RoseAccent.copy(alpha = 0.15f),
-                        shape = MaterialTheme.shapes.small,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.3f)),
+                        color = RoseContainer.copy(alpha = 0.35f),
+                        shape = SquircleMedium,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = RoseAccent)
-                            Spacer(modifier = Modifier.width(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(RoseAccent.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = RoseAccent, modifier = Modifier.size(18.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = uiState.errorMessage!!,
                                 color = RoseAccent,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
+                            IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(28.dp)) {
                                 Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = RoseAccent, modifier = Modifier.size(16.dp))
                             }
                         }
@@ -134,67 +166,121 @@ fun ConnectionScreen(
                 }
             }
 
-            // Connection Form Card
+            // Connection Form Container
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                    shape = MaterialTheme.shapes.large
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(SquircleLarge)
+                        .background(SurfaceContainer)
+                        .border(1.dp, CardBorderDark, SquircleLarge)
+                        .padding(20.dp)
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    Column {
                         Text(
-                            text = "Direct MongoDB Connection",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "Connection Details",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Quick Presets Chips
                         Text(
-                            text = "Supports Atlas (mongodb+srv://) and Direct TCP (mongodb://)",
+                            text = "QUICK TEMPLATES",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
+                            color = TextMuted,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(PillShape)
+                                    .background(SurfaceContainerHigh)
+                                    .clickable {
+                                        uriText = "mongodb://10.0.2.2:27017"
+                                        clusterName = "Android Emulator DB"
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Emulator (10.0.2.2)", style = MaterialTheme.typography.labelSmall, color = TextPrimary)
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(PillShape)
+                                    .background(SurfaceContainerHigh)
+                                    .clickable {
+                                        uriText = "mongodb+srv://user:password@cluster0.mongodb.net/?appName=MongoStudio"
+                                        clusterName = "Atlas Cloud"
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Atlas SRV", style = MaterialTheme.typography.labelSmall, color = CyanAccent)
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(PillShape)
+                                    .background(SurfaceContainerHigh)
+                                    .clickable {
+                                        uriText = "mongodb://localhost:27017"
+                                        clusterName = "Localhost"
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("Localhost", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // URI Input
-                        Text("Connection URI", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        // Connection URI Input
+                        Text("CONNECTION URI", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = uriText,
                             onValueChange = { uriText = it },
                             modifier = Modifier.fillMaxWidth(),
                             textStyle = MonospaceCodeStyle.copy(fontSize = 13.sp),
+                            shape = SquircleSmall,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = CardDark,
-                                unfocusedContainerColor = CardDark,
+                                focusedContainerColor = SurfaceContainerHigh,
+                                unfocusedContainerColor = SurfaceContainerHigh,
                                 focusedBorderColor = EmeraldPrimary,
                                 unfocusedBorderColor = CardBorderDark
                             ),
-                            placeholder = { Text("mongodb+srv://user:pass@cluster.mongodb.net", color = TextMuted) },
-                            singleLine = true
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Cluster Name
-                        Text("Cluster Nickname", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = clusterName,
-                            onValueChange = { clusterName = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = CardDark,
-                                unfocusedContainerColor = CardDark,
-                                focusedBorderColor = EmeraldPrimary,
-                                unfocusedBorderColor = CardBorderDark
-                            ),
-                            placeholder = { Text("e.g. Production Cluster or Dev DB", color = TextMuted) },
+                            placeholder = { Text("mongodb+srv://...", color = TextMuted) },
                             singleLine = true
                         )
 
                         Spacer(modifier = Modifier.height(14.dp))
+
+                        // Cluster Nickname
+                        Text("CLUSTER NICKNAME", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = clusterName,
+                            onValueChange = { clusterName = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = SquircleSmall,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = SurfaceContainerHigh,
+                                unfocusedContainerColor = SurfaceContainerHigh,
+                                focusedBorderColor = EmeraldPrimary,
+                                unfocusedBorderColor = CardBorderDark
+                            ),
+                            placeholder = { Text("e.g. Production Cluster", color = TextMuted) },
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // Save to Vault Toggle
                         Row(
@@ -203,42 +289,90 @@ fun ConnectionScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Save to Encrypted Vault", style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
-                                Text("AES-256 encrypted on this device for quick access", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                Text("Save to Encrypted Vault", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                                Text("AES-256 encrypted on this device", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                             }
                             Switch(
                                 checked = saveConnection,
                                 onCheckedChange = { saveConnection = it },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = TextOnPrimary,
-                                    checkedTrackColor = EmeraldPrimary
+                                    checkedTrackColor = EmeraldPrimary,
+                                    uncheckedTrackColor = SurfaceContainerHighest
                                 )
                             )
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Connect Button
-                        Button(
-                            onClick = { viewModel.connect(uriText, clusterName, saveConnection) },
-                            enabled = !uiState.isConnecting,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = EmeraldPrimary,
-                                contentColor = TextOnPrimary
-                            ),
-                            shape = MaterialTheme.shapes.medium
+                        // Connecting Wavy Progress
+                        AnimatedVisibility(
+                            visible = uiState.isConnecting,
+                            enter = fadeIn(),
+                            exit = fadeOut()
                         ) {
-                            if (uiState.isConnecting) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextOnPrimary, strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text("Resolving & Connecting Directly...", fontWeight = FontWeight.SemiBold)
-                            } else {
-                                Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Connect to MongoDB", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Column(modifier = Modifier.padding(bottom = 14.dp)) {
+                                WavyProgressIndicator(color = EmeraldVibrant)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Resolving SRV records & handshaking wire protocol...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = EmeraldLight,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        // Expressive Split Button for Connect
+                        Box {
+                            ExpressiveSplitButton(
+                                text = if (uiState.isConnecting) "Connecting..." else "Connect to Cluster",
+                                icon = Icons.Default.Bolt,
+                                enabled = !uiState.isConnecting && uriText.isNotBlank(),
+                                onPrimaryClick = {
+                                    viewModel.connect(uriText, clusterName, saveConnection)
+                                },
+                                onTrailingClick = {
+                                    showPresetsDropdown = true
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            DropdownMenu(
+                                expanded = showPresetsDropdown,
+                                onDismissRequest = { showPresetsDropdown = false },
+                                modifier = Modifier
+                                    .clip(SquircleMedium)
+                                    .background(SurfaceContainerHigh)
+                                    .border(1.dp, CardBorderDark, SquircleMedium)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Local Emulator (10.0.2.2)", color = TextPrimary) },
+                                    leadingIcon = { Icon(Icons.Default.PhoneAndroid, contentDescription = null, tint = EmeraldLight) },
+                                    onClick = {
+                                        uriText = "mongodb://10.0.2.2:27017"
+                                        clusterName = "Android Emulator"
+                                        showPresetsDropdown = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("MongoDB Atlas SRV", color = TextPrimary) },
+                                    leadingIcon = { Icon(Icons.Default.Cloud, contentDescription = null, tint = CyanAccent) },
+                                    onClick = {
+                                        uriText = "mongodb+srv://username:password@cluster0.mongodb.net/?appName=Cluster0"
+                                        clusterName = "MongoDB Atlas"
+                                        showPresetsDropdown = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Docker Container (127.0.0.1)", color = TextPrimary) },
+                                    leadingIcon = { Icon(Icons.Default.DeveloperBoard, contentDescription = null, tint = PurpleAccent) },
+                                    onClick = {
+                                        uriText = "mongodb://127.0.0.1:27017"
+                                        clusterName = "Docker MongoDB"
+                                        showPresetsDropdown = false
+                                    }
+                                )
                             }
                         }
                     }
@@ -258,6 +392,12 @@ fun ConnectionScreen(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
+                    ExpressiveTag(
+                        text = "AES-256",
+                        icon = Icons.Default.Lock,
+                        containerColor = SurfaceContainerHigh,
+                        contentColor = EmeraldLight
+                    )
                 }
             }
 
@@ -266,32 +406,41 @@ fun ConnectionScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(SurfaceDark)
-                            .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
-                            .padding(24.dp),
+                            .clip(SquircleMedium)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, SquircleMedium)
+                            .padding(28.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.LockOpen, contentDescription = null, tint = TextMuted, modifier = Modifier.size(36.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("No saved connections yet", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
-                            Text("Saved clusters will appear here with encrypted credentials.", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(SurfaceContainerHigh),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Key, contentDescription = null, tint = TextMuted, modifier = Modifier.size(24.dp))
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("No saved clusters yet", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = TextSecondary)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("Your authenticated clusters are encrypted with hardware-backed keys.", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         }
                     }
                 }
             } else {
                 items(uiState.savedConnections) { saved ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                        shape = MaterialTheme.shapes.medium
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(SquircleMedium)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, SquircleMedium)
+                            .padding(16.dp)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -302,30 +451,46 @@ fun ConnectionScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
                                     text = saved.maskedUri,
                                     style = MonospaceCodeStyle.copy(fontSize = 11.sp),
                                     color = TextSecondary
                                 )
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { itemToDelete = saved }) {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = RoseAccent)
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { itemToDelete = saved },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(SurfaceContainerHigh)
+                                ) {
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = RoseAccent, modifier = Modifier.size(18.dp))
                                 }
-                                Spacer(modifier = Modifier.width(4.dp))
+
                                 Button(
                                     onClick = { viewModel.connectSaved(saved) },
                                     colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                    shape = MaterialTheme.shapes.small
+                                    shape = PillShape
                                 ) {
-                                    Text("Connect", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Connect", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -333,8 +498,8 @@ fun ConnectionScreen(
     itemToDelete?.let { saved ->
         ConfirmDialog(
             title = "Delete Saved Connection?",
-            message = "Remove '${saved.name}' from your vault? You will need to re-enter credentials to connect again.",
-            confirmText = "Remove",
+            message = "Remove '${saved.name}' from your encrypted vault?",
+            confirmText = "Delete",
             onConfirm = {
                 viewModel.deleteSaved(saved.id)
                 itemToDelete = null

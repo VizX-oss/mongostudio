@@ -12,10 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mongostudio.app.ui.theme.*
 
+/**
+ * Material 3 Expressive Header with status badge, pill actions, and modern hierarchy.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopHeader(
@@ -29,90 +34,149 @@ fun TopHeader(
     onSettingsClick: (() -> Unit)? = null,
     onDisconnectClick: (() -> Unit)? = null
 ) {
-    TopAppBar(
-        title = {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
-                }
-            }
-        },
-        navigationIcon = {
-            if (onBackClick != null) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = TextPrimary
-                    )
-                }
-            }
-        },
-        actions = {
-            // Standalone Connection Status Pill
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(if (isConnectedToCluster) EmeraldContainer else CardDark)
-                    .border(1.dp, if (isConnectedToCluster) EmeraldPrimary else CardBorderDark, CircleShape)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+    Surface(
+        color = SurfaceDark,
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (isConnectedToCluster) EmeraldPrimary else TextMuted)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = when {
-                            isConnectedToCluster && pingMs != null -> "Live • ${pingMs}ms"
-                            isConnectedToCluster -> "Connected"
+                // Navigation & Title
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    if (onBackClick != null) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceContainerHigh)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            letterSpacing = (-0.3).sp
+                        )
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // Actions & Status
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Live Status Badge
+                    ExpressiveLiveBadge(
+                        label = when {
+                            isConnectedToCluster && pingMs != null -> "${pingMs}ms"
+                            isConnectedToCluster -> "Live"
                             else -> "Standalone"
                         },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isConnectedToCluster) EmeraldLight else TextSecondary,
-                        fontSize = 10.sp
+                        isActive = isConnectedToCluster,
+                        activeColor = EmeraldLight,
+                        inactiveColor = TextMuted
                     )
-                }
-            }
 
-            if (onRefreshClick != null) {
-                IconButton(onClick = onRefreshClick) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = TextSecondary)
-                }
-            }
+                    if (onRefreshClick != null) {
+                        IconButton(
+                            onClick = onRefreshClick,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceContainerHigh)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
 
-            if (isConnectedToCluster && onConsoleClick != null) {
-                IconButton(onClick = onConsoleClick) {
-                    Icon(Icons.Default.Terminal, contentDescription = "Console", tint = EmeraldLight)
-                }
-            }
+                    if (isConnectedToCluster && onConsoleClick != null) {
+                        IconButton(
+                            onClick = onConsoleClick,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(EmeraldContainer)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Terminal,
+                                contentDescription = "Console",
+                                tint = EmeraldLight,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
 
-            if (onSettingsClick != null) {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextSecondary)
-                }
-            }
+                    if (onSettingsClick != null) {
+                        IconButton(
+                            onClick = onSettingsClick,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceContainerHigh)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
 
-            if (isConnectedToCluster && onDisconnectClick != null) {
-                IconButton(onClick = onDisconnectClick) {
-                    Icon(Icons.Default.PowerSettingsNew, contentDescription = "Disconnect", tint = RoseAccent)
+                    if (isConnectedToCluster && onDisconnectClick != null) {
+                        IconButton(
+                            onClick = onDisconnectClick,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(RoseAccent.copy(alpha = 0.15f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PowerSettingsNew,
+                                contentDescription = "Disconnect",
+                                tint = RoseAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = SurfaceDark
-        )
-    )
+        }
+    }
 }

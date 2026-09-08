@@ -45,5 +45,14 @@ class StandaloneMongoTest {
 
         assertEquals("javax.security.sasl.qop", javax.security.sasl.Sasl.QOP)
     }
+
+    @Test
+    fun testMaterial3ExpressiveTokens() {
+        assertNotNull(com.mongostudio.app.ui.theme.PillShape)
+        assertNotNull(com.mongostudio.app.ui.theme.AsymmetricCardShape)
+        assertNotNull(com.mongostudio.app.ui.theme.EmeraldPrimary)
+        assertNotNull(com.mongostudio.app.ui.theme.SurfaceContainer)
+    }
 }
+
 

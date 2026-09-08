@@ -1,10 +1,10 @@
 package com.mongostudio.app.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Close
@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -54,47 +55,64 @@ fun JsonEditorModal(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(BackgroundDark.copy(alpha = 0.95f))
+                .background(BackgroundDark.copy(alpha = 0.9f))
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Card(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.92f),
-                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                shape = MaterialTheme.shapes.large
+                    .fillMaxHeight(0.92f)
+                    .clip(SquircleLarge)
+                    .background(SurfaceContainer)
+                    .border(1.dp, CardBorderDark, SquircleLarge)
+                    .padding(20.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp)
-                ) {
+                Column(modifier = Modifier.fillMaxSize()) {
                     // Header
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = "Direct Push Editor",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = EmeraldLight
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CloudUpload, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Direct Wire Push Editor",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = EmeraldLight
+                                )
+                            }
                         }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceContainerHigh)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary, modifier = Modifier.size(18.dp))
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Toolbar
                     Row(
@@ -111,10 +129,11 @@ fun JsonEditorModal(
                                     errorMessage = "Cannot format: ${e.message}"
                                 }
                             },
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            shape = PillShape,
                             border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark)
                         ) {
-                            Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Format JSON", style = MaterialTheme.typography.labelSmall, color = TextPrimary)
                         }
@@ -123,21 +142,21 @@ fun JsonEditorModal(
                     if (errorMessage != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Surface(
-                            color = RoseAccent.copy(alpha = 0.15f),
-                            shape = MaterialTheme.shapes.small,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.3f)),
+                            color = RoseContainer.copy(alpha = 0.35f),
+                            shape = SquircleSmall,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.5f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
                                 text = errorMessage!!,
                                 color = RoseAccent,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(10.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     // Editor Field
                     OutlinedTextField(
@@ -150,18 +169,24 @@ fun JsonEditorModal(
                             .fillMaxWidth()
                             .weight(1f),
                         textStyle = MonospaceCodeStyle.copy(fontSize = 13.sp),
+                        shape = SquircleSmall,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = CardDark,
-                            unfocusedContainerColor = CardDark,
+                            focusedContainerColor = SurfaceContainerHigh,
+                            unfocusedContainerColor = SurfaceContainerHigh,
                             focusedBorderColor = EmeraldPrimary,
                             unfocusedBorderColor = CardBorderDark,
                             cursorColor = EmeraldLight
                         ),
-                        shape = MaterialTheme.shapes.medium,
                         placeholder = { Text("Enter valid JSON document...", style = MonospaceCodeStyle, color = TextMuted) }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    AnimatedVisibility(visible = isLoading) {
+                        Column(modifier = Modifier.padding(bottom = 12.dp)) {
+                            WavyProgressIndicator(color = EmeraldLight)
+                        }
+                    }
 
                     // Action buttons
                     Row(
@@ -184,17 +209,11 @@ fun JsonEditorModal(
                                 containerColor = EmeraldPrimary,
                                 contentColor = TextOnPrimary
                             ),
-                            shape = MaterialTheme.shapes.medium
+                            shape = PillShape
                         ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = TextOnPrimary, strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pushing...", color = TextOnPrimary)
-                            } else {
-                                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(confirmButtonText, color = TextOnPrimary)
-                            }
+                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(confirmButtonText, fontWeight = FontWeight.Bold, color = TextOnPrimary)
                         }
                     }
                 }

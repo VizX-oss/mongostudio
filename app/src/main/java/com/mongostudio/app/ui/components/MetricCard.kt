@@ -3,6 +3,7 @@ package com.mongostudio.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,6 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mongostudio.app.ui.theme.*
 
+/**
+ * Material 3 Expressive Metric Card.
+ * Uses asymmetric squircle shapes, playful tonal containers, and glowing icon pills.
+ */
 @Composable
 fun MetricCard(
     title: String,
@@ -28,10 +33,10 @@ fun MetricCard(
 ) {
     Box(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(SurfaceDark)
-            .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
-            .padding(14.dp)
+            .clip(AsymmetricCardShape)
+            .background(SurfaceContainer)
+            .border(1.dp, CardBorderDark, AsymmetricCardShape)
+            .padding(16.dp)
     ) {
         Column {
             Row(
@@ -43,39 +48,43 @@ fun MetricCard(
                     text = title.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted,
-                    letterSpacing = 0.8.sp
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
                 )
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(accentColor.copy(alpha = 0.15f)),
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.16f))
+                        .border(1.dp, accentColor.copy(alpha = 0.3f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = accentColor,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = TextPrimary,
+                letterSpacing = (-0.5).sp
             )
 
             if (subValue != null) {
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = subValue,
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
+                    color = TextSecondary,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }

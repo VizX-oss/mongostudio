@@ -4,10 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -22,7 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.Gson
@@ -36,7 +36,6 @@ object JsonSyntaxHighlighter {
     fun formatAndHighlight(data: Any?): AnnotatedString {
         val jsonStr = try {
             if (data is String) {
-                // Parse and re-format to ensure pretty print
                 val parsed = prettyGson.fromJson(data, Any::class.java)
                 prettyGson.toJson(parsed)
             } else {
@@ -52,7 +51,7 @@ object JsonSyntaxHighlighter {
         return buildAnnotatedString {
             var inString = false
             var isKey = false
-            var currentToken = StringBuilder()
+            val currentToken = StringBuilder()
             var i = 0
 
             while (i < json.length) {
@@ -60,12 +59,10 @@ object JsonSyntaxHighlighter {
 
                 if (c == '"') {
                     if (inString) {
-                        // Ending quote
                         currentToken.append(c)
                         inString = false
                         val text = currentToken.toString()
-                        
-                        // Check if following character after spaces is ':'
+
                         var j = i + 1
                         while (j < json.length && json[j].isWhitespace()) j++
                         isKey = j < json.length && json[j] == ':'
@@ -76,7 +73,6 @@ object JsonSyntaxHighlighter {
                         addStyle(SpanStyle(color = color), start, length)
                         currentToken.clear()
                     } else {
-                        // Starting quote
                         inString = true
                         currentToken.append(c)
                     }
@@ -94,7 +90,6 @@ object JsonSyntaxHighlighter {
                     continue
                 }
 
-                // Outside of quotes
                 when {
                     c in listOf('{', '}', '[', ']') -> {
                         val start = length
@@ -170,10 +165,10 @@ fun JsonViewerCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
-            .background(CardDark)
-            .border(1.dp, CardBorderDark, MaterialTheme.shapes.small)
-            .padding(12.dp)
+            .clip(SquircleSmall)
+            .background(SurfaceContainerHigh)
+            .border(1.dp, CardBorderDark, SquircleSmall)
+            .padding(14.dp)
     ) {
         Column {
             Row(
@@ -182,30 +177,39 @@ fun JsonViewerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "BSON / JSON Document",
+                    text = "BSON DOCUMENT",
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted
+                    color = TextMuted,
+                    fontSize = 10.sp,
+                    letterSpacing = 0.8.sp
                 )
                 if (canCopy) {
-                    IconButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("JSON Document", formattedJson))
-                            Toast.makeText(context, "Copied JSON to clipboard", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.size(24.dp)
+                    Box(
+                        modifier = Modifier
+                            .clip(PillShape)
+                            .background(SurfaceContainerHighest)
+                            .clickable {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("JSON Document", formattedJson))
+                                Toast.makeText(context, "Copied BSON to clipboard", Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy JSON",
-                            tint = EmeraldLight,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy JSON",
+                                tint = EmeraldLight,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Copy", style = MaterialTheme.typography.labelSmall, color = EmeraldLight, fontSize = 11.sp)
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             SelectionContainer {
                 Text(
@@ -213,29 +217,36 @@ fun JsonViewerCard(
                     style = MonospaceCodeStyle,
                     maxLines = if (isExpanded || !needsExpansion) Int.MAX_VALUE else maxCollapsedLines,
                     fontSize = 12.sp,
-                    lineHeight = 17.sp
+                    lineHeight = 18.sp
                 )
             }
 
             if (needsExpansion) {
-                Spacer(modifier = Modifier.height(4.dp))
-                TextButton(
-                    onClick = { isExpanded = !isExpanded },
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(PillShape)
+                        .background(SurfaceContainerHighest)
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(vertical = 4.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = EmeraldLight,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (isExpanded) "Collapse" else "Show All (${lineCount} lines)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = EmeraldLight
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = EmeraldLight,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isExpanded) "Collapse" else "Show All (${lineCount} lines)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = EmeraldLight,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
         }

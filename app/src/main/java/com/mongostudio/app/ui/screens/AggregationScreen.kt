@@ -1,10 +1,15 @@
 package com.mongostudio.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,8 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mongostudio.app.ui.components.JsonViewerCard
-import com.mongostudio.app.ui.components.TopHeader
+import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
@@ -56,46 +60,51 @@ fun AggregationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Pipeline Presets Row
+            // Preset Stage Chips
             item {
-                Text(
-                    text = "Quick Presets",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    SuggestionChip(
-                        onClick = {
-                            pipelineText = """[
+                Column {
+                    Text(
+                        text = "PIPELINE TEMPLATES",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(PillShape)
+                                .background(SurfaceContainerHigh)
+                                .border(1.dp, AmberAccent.copy(alpha = 0.3f), PillShape)
+                                .clickable {
+                                    pipelineText = """[
   {
     "${'$'}group": {
       "_id": "${'$'}status",
-      "count": { "${'$'}sum": 1 }
+      "total": { "${'$'}sum": 1 }
     }
   }
 ]"""
-                        },
-                        label = { Text("Group by Status", fontSize = 12.sp) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = SurfaceDark,
-                            labelColor = TextPrimary
-                        ),
-                        border = SuggestionChipDefaults.suggestionChipBorder(
-                            enabled = true,
-                            borderColor = CardBorderDark
-                        )
-                    )
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("${'$'}group by status", style = MaterialTheme.typography.labelSmall, color = AmberAccent, fontWeight = FontWeight.SemiBold)
+                        }
 
-                    SuggestionChip(
-                        onClick = {
-                            pipelineText = """[
+                        Box(
+                            modifier = Modifier
+                                .clip(PillShape)
+                                .background(SurfaceContainerHigh)
+                                .border(1.dp, CyanAccent.copy(alpha = 0.3f), PillShape)
+                                .clickable {
+                                    pipelineText = """[
   {
     "${'$'}sort": { "_id": -1 }
   },
@@ -103,37 +112,78 @@ fun AggregationScreen(
     "${'$'}limit": 10
   }
 ]"""
-                        },
-                        label = { Text("Recent 10", fontSize = 12.sp) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = SurfaceDark,
-                            labelColor = TextPrimary
-                        ),
-                        border = SuggestionChipDefaults.suggestionChipBorder(
-                            enabled = true,
-                            borderColor = CardBorderDark
-                        )
-                    )
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("${'$'}sort & limit 10", style = MaterialTheme.typography.labelSmall, color = CyanAccent, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(PillShape)
+                                .background(SurfaceContainerHigh)
+                                .border(1.dp, PurpleAccent.copy(alpha = 0.3f), PillShape)
+                                .clickable {
+                                    pipelineText = """[
+  {
+    "${'$'}match": { "count": { "${'$'}gt": 0 } }
+  },
+  {
+    "${'$'}project": { "name": 1, "count": 1 }
+  }
+]"""
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("${'$'}match & project", style = MaterialTheme.typography.labelSmall, color = PurpleAccent, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                 }
             }
 
-            // Pipeline Editor Card
+            // Pipeline Editor Container
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                    shape = MaterialTheme.shapes.medium
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(SquircleLarge)
+                        .background(SurfaceContainer)
+                        .border(1.dp, CardBorderDark, SquircleLarge)
+                        .padding(18.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Pipeline Stages (JSON Array)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(AmberAccent.copy(alpha = 0.16f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Functions, contentDescription = null, tint = AmberAccent, modifier = Modifier.size(18.dp))
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Pipeline Stages",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                            ExpressiveTag(
+                                text = "JSON Array",
+                                containerColor = SurfaceContainerHigh,
+                                contentColor = TextSecondary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedTextField(
                             value = pipelineText,
@@ -141,16 +191,27 @@ fun AggregationScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 140.dp, max = 260.dp),
+                            shape = SquircleSmall,
                             textStyle = MonospaceCodeStyle.copy(fontSize = 12.5.sp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = CardDark,
-                                unfocusedContainerColor = CardDark,
+                                focusedContainerColor = SurfaceContainerHigh,
+                                unfocusedContainerColor = SurfaceContainerHigh,
                                 focusedBorderColor = EmeraldPrimary,
                                 unfocusedBorderColor = CardBorderDark
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        AnimatedVisibility(
+                            visible = uiState.isLoading,
+                            enter = fadeIn(),
+                            exit = fadeOut()
+                        ) {
+                            Column(modifier = Modifier.padding(bottom = 12.dp)) {
+                                WavyProgressIndicator(color = AmberAccent)
+                            }
+                        }
 
                         Button(
                             onClick = { viewModel.runAggregate(pipelineText) },
@@ -160,17 +221,11 @@ fun AggregationScreen(
                                 containerColor = EmeraldPrimary,
                                 contentColor = TextOnPrimary
                             ),
-                            shape = MaterialTheme.shapes.small
+                            shape = PillShape
                         ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = TextOnPrimary, strokeWidth = 2.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Executing Pipeline...")
-                            } else {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Execute Pipeline", fontWeight = FontWeight.Bold)
-                            }
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Execute Aggregation", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -180,16 +235,16 @@ fun AggregationScreen(
             if (uiState.errorMessage != null) {
                 item {
                     Surface(
-                        color = RoseAccent.copy(alpha = 0.15f),
-                        shape = MaterialTheme.shapes.small,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.3f)),
+                        color = RoseContainer.copy(alpha = 0.35f),
+                        shape = SquircleMedium,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = uiState.errorMessage!!,
                             color = RoseAccent,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(14.dp)
                         )
                     }
                 }
@@ -205,27 +260,55 @@ fun AggregationScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Pipeline Output (${aggResult.count} items)",
+                            text = "Pipeline Output",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
+                        )
+
+                        ExpressiveTag(
+                            text = "${aggResult.count} items returned",
+                            containerColor = SurfaceContainerHigh,
+                            contentColor = EmeraldLight
                         )
                     }
                 }
 
                 if (aggResult.results.isEmpty()) {
                     item {
-                        Text("Pipeline returned empty result set", color = TextSecondary)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleMedium)
+                                .background(SurfaceContainer)
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Pipeline returned 0 items", color = TextSecondary)
+                        }
                     }
                 } else {
                     items(aggResult.results) { resItem ->
-                        JsonViewerCard(
-                            data = resItem,
-                            maxCollapsedLines = 10,
-                            canCopy = true
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleMedium)
+                                .background(SurfaceContainer)
+                                .border(1.dp, CardBorderDark, SquircleMedium)
+                                .padding(14.dp)
+                        ) {
+                            JsonViewerCard(
+                                data = resItem,
+                                maxCollapsedLines = 10,
+                                canCopy = true
+                            )
+                        }
                     }
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }

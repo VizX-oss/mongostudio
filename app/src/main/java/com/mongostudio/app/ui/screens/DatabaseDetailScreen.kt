@@ -1,11 +1,15 @@
 package com.mongostudio.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,8 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mongostudio.app.data.model.CollectionInfo
 import com.mongostudio.app.data.model.FormatUtils
-import com.mongostudio.app.ui.components.ConfirmDialog
-import com.mongostudio.app.ui.components.TopHeader
+import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
@@ -55,14 +58,35 @@ fun DatabaseDetailScreen(
                 onRefreshClick = { viewModel.loadCollections(dbName) }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddCollectionDialog = true },
-                containerColor = EmeraldPrimary,
-                contentColor = TextOnPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Collection")
-            }
+        bottomBar = {
+            ExpressiveFloatingToolbar(
+                actions = listOf(
+                    ToolbarAction(
+                        id = "refresh",
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Refresh Collections",
+                        onClick = { viewModel.loadCollections(dbName) }
+                    )
+                ),
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { showAddCollectionDialog = true },
+                        containerColor = EmeraldPrimary,
+                        contentColor = TextOnPrimary,
+                        shape = PillShape,
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("New Collection", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
+            )
         },
         containerColor = BackgroundDark
     ) { padding ->
@@ -70,18 +94,34 @@ fun DatabaseDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // DB Overview Stats Banner
+            // Loading Wavy Progress
+            if (uiState.isLoading && uiState.collections.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularWavySpinner(sizeDp = 44.dp, color = EmeraldLight)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text("Reading collections catalog...", style = MaterialTheme.typography.labelSmall, color = EmeraldLight)
+                    }
+                }
+            }
+
+            // DB Overview Summary Card
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(SurfaceDark)
-                        .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
-                        .padding(16.dp)
+                        .clip(AsymmetricCardShape)
+                        .background(SurfaceContainer)
+                        .border(1.dp, CardBorderDark, AsymmetricCardShape)
+                        .padding(20.dp)
                 ) {
                     Column {
                         Row(
@@ -89,53 +129,68 @@ fun DatabaseDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Database Summary",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                            Surface(
-                                color = EmeraldContainer,
-                                shape = MaterialTheme.shapes.extraSmall
-                            ) {
-                                Text(
-                                    text = FormatUtils.formatBytes(dbInfo?.sizeOnDisk ?: 0L),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = EmeraldLight,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(EmeraldContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Storage, contentDescription = null, tint = EmeraldVibrant, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = dbName,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                    Text(
+                                        text = "Database Catalog",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextSecondary
+                                    )
+                                }
                             }
+
+                            ExpressiveTag(
+                                text = FormatUtils.formatBytes(dbInfo?.sizeOnDisk ?: 0L),
+                                icon = Icons.Default.CloudQueue,
+                                containerColor = SurfaceContainerHigh,
+                                contentColor = EmeraldLight
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Collections", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                                Text("${uiState.collections.size}", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                Text("COLLECTIONS", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text("${uiState.collections.size}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                             Column {
-                                Text("Total Docs", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                                Text("${dbInfo?.objectsCount ?: 0}", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                Text("TOTAL DOCS", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text("${dbInfo?.objectsCount ?: 0}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                             Column {
-                                Text("Storage Size", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                                Text(FormatUtils.formatBytes(dbInfo?.storageSize ?: 0L), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                Text("STORAGE", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text(FormatUtils.formatBytes(dbInfo?.storageSize ?: 0L), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                             Column {
-                                Text("Index Size", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                                Text(FormatUtils.formatBytes(dbInfo?.indexSize ?: 0L), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                Text("INDEXES", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                                Text(FormatUtils.formatBytes(dbInfo?.indexSize ?: 0L), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                         }
                     }
                 }
             }
 
-            // Section Header
+            // Collections Header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -144,7 +199,7 @@ fun DatabaseDetailScreen(
                 ) {
                     Text(
                         text = "Collections (${uiState.collections.size})",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
@@ -156,126 +211,143 @@ fun DatabaseDetailScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(SurfaceDark)
-                            .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
+                            .clip(SquircleMedium)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, SquircleMedium)
                             .padding(32.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.DatasetLinked, contentDescription = null, tint = TextMuted, modifier = Modifier.size(40.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("No collections in this database", color = TextSecondary)
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Icon(Icons.Default.DatasetLinked, contentDescription = null, tint = TextMuted, modifier = Modifier.size(44.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text("No collections in this database", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Spacer(modifier = Modifier.height(12.dp))
                             Button(
                                 onClick = { showAddCollectionDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary)
+                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
+                                shape = PillShape
                             ) {
-                                Text("Create Collection")
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Create First Collection", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             } else {
                 items(uiState.collections) { col ->
-                    Card(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onNavigateToDocuments(dbName, col.name) },
-                        colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                        shape = MaterialTheme.shapes.medium
+                            .clip(SquircleMedium)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, SquircleMedium)
+                            .clickable { onNavigateToDocuments(dbName, col.name) }
+                            .padding(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.TableChart,
-                                        contentDescription = null,
-                                        tint = EmeraldLight,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = col.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(34.dp)
+                                            .clip(CircleShape)
+                                            .background(SurfaceContainerHigh),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.TableChart,
+                                            contentDescription = null,
+                                            tint = EmeraldLight,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = col.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextPrimary
+                                        )
+                                        Text(
+                                            text = "${col.docCount} docs • ${FormatUtils.formatBytes(col.storageSize)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = TextSecondary
+                                        )
+                                    }
                                 }
+
                                 IconButton(
                                     onClick = { colToDrop = col },
-                                    modifier = Modifier.size(30.dp)
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(SurfaceContainerHigh)
                                 ) {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Collection", tint = RoseAccent, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Collection", tint = RoseAccent, modifier = Modifier.size(16.dp))
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "${col.docCount} documents",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = TextSecondary
-                                )
-                                Text(
-                                    text = FormatUtils.formatBytes(col.storageSize),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = EmeraldLight
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Action Chips
+                            // Playful Action Pills Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedButton(
+                                Button(
                                     onClick = { onNavigateToDocuments(dbName, col.name) },
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.5f))
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = EmeraldContainer,
+                                        contentColor = EmeraldLight
+                                    ),
+                                    shape = PillShape
                                 ) {
-                                    Icon(Icons.Default.Visibility, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Browse", fontSize = 12.sp, color = EmeraldLight)
+                                    Text("Browse", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
 
                                 OutlinedButton(
                                     onClick = { onNavigateToAggregation(dbName, col.name) },
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark)
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberAccent),
+                                    shape = PillShape
                                 ) {
-                                    Icon(Icons.Default.Functions, contentDescription = null, tint = AmberAccent, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Functions, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Aggregate", fontSize = 12.sp, color = TextPrimary)
+                                    Text("Pipeline", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 }
 
                                 OutlinedButton(
                                     onClick = { onNavigateToIndexes(dbName, col.name) },
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark)
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SkyAccent),
+                                    shape = PillShape
                                 ) {
-                                    Icon(Icons.Default.Key, contentDescription = null, tint = SkyAccent, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(14.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Indexes", fontSize = 12.sp, color = TextPrimary)
+                                    Text("Indexes", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(60.dp))
             }
         }
     }
@@ -299,20 +371,36 @@ fun DatabaseDetailScreen(
     if (showAddCollectionDialog) {
         AlertDialog(
             onDismissRequest = { showAddCollectionDialog = false },
-            containerColor = SurfaceDark,
-            title = { Text("Add New Collection", color = TextPrimary) },
+            containerColor = SurfaceContainer,
+            shape = SquircleLarge,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(EmeraldContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Add New Collection", fontWeight = FontWeight.Bold, color = TextPrimary)
+                }
+            },
             text = {
                 Column {
-                    Text("Collection Name", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("COLLECTION NAME", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = newColName,
                         onValueChange = { newColName = it },
                         singleLine = true,
-                        placeholder = { Text("e.g. orders, logs, products", color = TextMuted) },
+                        placeholder = { Text("e.g. customers, events, logs", color = TextMuted) },
+                        shape = SquircleSmall,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = CardDark,
-                            unfocusedContainerColor = CardDark,
+                            focusedContainerColor = SurfaceContainerHigh,
+                            unfocusedContainerColor = SurfaceContainerHigh,
                             focusedBorderColor = EmeraldPrimary,
                             unfocusedBorderColor = CardBorderDark
                         ),
@@ -329,9 +417,10 @@ fun DatabaseDetailScreen(
                             newColName = ""
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
+                    shape = PillShape
                 ) {
-                    Text("Create")
+                    Text("Create", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

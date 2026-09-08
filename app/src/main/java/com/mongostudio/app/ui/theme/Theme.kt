@@ -21,17 +21,31 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = TextOnPrimary,
     primaryContainer = EmeraldContainer,
     onPrimaryContainer = EmeraldLight,
-    secondary = EmeraldLight,
+    secondary = SkyAccent,
     onSecondary = TextOnPrimary,
-    tertiary = SkyAccent,
+    secondaryContainer = SkyContainer,
+    onSecondaryContainer = SkyAccent,
+    tertiary = PurpleAccent,
+    onTertiary = Color.White,
+    tertiaryContainer = PurpleContainer,
+    onTertiaryContainer = PurpleAccent,
     background = BackgroundDark,
     surface = SurfaceDark,
-    surfaceVariant = CardDark,
+    surfaceVariant = SurfaceContainerHigh,
+    surfaceContainerLowest = SurfaceContainerLowest,
+    surfaceContainerLow = SurfaceContainerLow,
+    surfaceContainer = SurfaceContainer,
+    surfaceContainerHigh = SurfaceContainerHigh,
+    surfaceContainerHighest = SurfaceContainerHighest,
     onBackground = TextPrimary,
     onSurface = TextPrimary,
     onSurfaceVariant = TextSecondary,
     outline = CardBorderDark,
-    error = RoseAccent
+    outlineVariant = CardBorderSubtle,
+    error = RoseAccent,
+    errorContainer = RoseContainer,
+    onError = Color.White,
+    onErrorContainer = RoseAccent
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -53,8 +67,8 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MongoStudioTheme(
-    darkTheme: Boolean = true, // Default to MongoStudio signature dark theme
-    dynamicColor: Boolean = false, // Preserve brand emerald aesthetic by default
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

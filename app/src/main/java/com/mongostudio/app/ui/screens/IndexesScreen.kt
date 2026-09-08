@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,8 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.Gson
 import com.mongostudio.app.data.model.IndexInfo
-import com.mongostudio.app.ui.components.ConfirmDialog
-import com.mongostudio.app.ui.components.TopHeader
+import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
@@ -53,13 +53,34 @@ fun IndexesScreen(
                 onRefreshClick = { viewModel.loadIndexes(dbName, colName) }
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateIndexDialog = true },
-                containerColor = EmeraldPrimary,
-                contentColor = TextOnPrimary,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Create Index", fontWeight = FontWeight.Bold) }
+        bottomBar = {
+            ExpressiveFloatingToolbar(
+                actions = listOf(
+                    ToolbarAction(
+                        id = "refresh",
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Refresh Indexes",
+                        onClick = { viewModel.loadIndexes(dbName, colName) }
+                    )
+                ),
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { showCreateIndexDialog = true },
+                        containerColor = EmeraldPrimary,
+                        contentColor = TextOnPrimary,
+                        shape = PillShape,
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("New Index", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
             )
         },
         containerColor = BackgroundDark
@@ -68,7 +89,7 @@ fun IndexesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             item {
@@ -83,27 +104,44 @@ fun IndexesScreen(
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
+
+                    ExpressiveTag(
+                        text = "B-Tree",
+                        icon = Icons.Default.Speed,
+                        containerColor = SurfaceContainerHigh,
+                        contentColor = SkyAccent
+                    )
                 }
             }
 
             items(uiState.indexes) { idx ->
                 val isDefaultIdIndex = idx.name == "_id_"
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorderDark),
-                    shape = MaterialTheme.shapes.medium
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(SquircleMedium)
+                        .background(SurfaceContainer)
+                        .border(1.dp, CardBorderDark, SquircleMedium)
+                        .padding(16.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Key, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(SkyAccent.copy(alpha = 0.16f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Key, contentDescription = null, tint = SkyAccent, modifier = Modifier.size(18.dp))
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = idx.name,
                                     style = MaterialTheme.typography.titleMedium,
@@ -115,14 +153,17 @@ fun IndexesScreen(
                             if (!isDefaultIdIndex) {
                                 IconButton(
                                     onClick = { indexToDrop = idx },
-                                    modifier = Modifier.size(30.dp)
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(SurfaceContainerHigh)
                                 ) {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Index", tint = RoseAccent, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Index", tint = RoseAccent, modifier = Modifier.size(16.dp))
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
                             text = "Keys: ${gson.toJson(idx.key ?: emptyMap<String, Any>())}",
@@ -130,27 +171,40 @@ fun IndexesScreen(
                             color = SkyAccent
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             if (isDefaultIdIndex) {
-                                Surface(color = CardBorderDark, shape = MaterialTheme.shapes.extraSmall) {
-                                    Text("DEFAULT PRIMARY KEY", color = TextSecondary, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                                }
+                                ExpressiveTag(
+                                    text = "PRIMARY KEY",
+                                    containerColor = SurfaceContainerHigh,
+                                    contentColor = TextSecondary
+                                )
                             }
                             if (idx.unique == true) {
-                                Surface(color = EmeraldContainer, shape = MaterialTheme.shapes.extraSmall) {
-                                    Text("UNIQUE", color = EmeraldLight, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                                }
+                                ExpressiveTag(
+                                    text = "UNIQUE",
+                                    containerColor = EmeraldContainer,
+                                    contentColor = EmeraldLight
+                                )
                             }
                             idx.v?.let { v ->
-                                Surface(color = CardDark, shape = MaterialTheme.shapes.extraSmall) {
-                                    Text("VERSION $v", color = TextMuted, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                                }
+                                ExpressiveTag(
+                                    text = "v$v",
+                                    containerColor = SurfaceContainerHighest,
+                                    contentColor = TextMuted
+                                )
                             }
                         }
                     }
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(60.dp))
             }
         }
     }
@@ -159,34 +213,53 @@ fun IndexesScreen(
     if (showCreateIndexDialog) {
         AlertDialog(
             onDismissRequest = { showCreateIndexDialog = false },
-            containerColor = SurfaceDark,
-            title = { Text("Create New Index", color = TextPrimary) },
+            containerColor = SurfaceContainer,
+            shape = SquircleLarge,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(SkyAccent.copy(alpha = 0.16f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = SkyAccent, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Create New Index", fontWeight = FontWeight.Bold, color = TextPrimary)
+                }
+            },
             text = {
                 Column {
-                    Text("Field Name", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("FIELD NAME", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = fieldName,
                         onValueChange = { fieldName = it },
                         singleLine = true,
                         placeholder = { Text("e.g. email or username", color = TextMuted) },
+                        shape = SquircleSmall,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = CardDark,
-                            unfocusedContainerColor = CardDark,
+                            focusedContainerColor = SurfaceContainerHigh,
+                            unfocusedContainerColor = SurfaceContainerHigh,
                             focusedBorderColor = EmeraldPrimary,
                             unfocusedBorderColor = CardBorderDark
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Sort Direction (Descending -1)", color = TextPrimary)
+                        Column {
+                            Text("Descending (-1)", style = MaterialTheme.typography.bodyMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Sort order for indexed key", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        }
                         Switch(
                             checked = isDescending,
                             onCheckedChange = { isDescending = it },
@@ -194,14 +267,17 @@ fun IndexesScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Unique Constraint", color = TextPrimary)
+                        Column {
+                            Text("Unique Constraint", style = MaterialTheme.typography.bodyMedium, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text("Enforce distinct values", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        }
                         Switch(
                             checked = isUnique,
                             onCheckedChange = { isUnique = it },
@@ -221,9 +297,10 @@ fun IndexesScreen(
                             fieldName = ""
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
+                    shape = PillShape
                 ) {
-                    Text("Create")
+                    Text("Create Index", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -238,7 +315,7 @@ fun IndexesScreen(
     indexToDrop?.let { idx ->
         ConfirmDialog(
             title = "Drop Index '${idx.name}'?",
-            message = "This will remove the index '${idx.name}' from collection '$colName'. Query performance on this field may degrade.",
+            message = "Remove index '${idx.name}' from collection '$colName'? Query speeds relying on this field will be impacted.",
             confirmText = "Drop Index",
             isDestructive = true,
             onConfirm = {
