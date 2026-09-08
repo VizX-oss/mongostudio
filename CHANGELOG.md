@@ -24,3 +24,7 @@ All notable changes to the MongoStudio Android App will be documented in this fi
 - **Settings & Host Configuration**: Configurable MongoStudio server endpoint with real-time ping diagnostic.
 - **GitHub Actions CI Pipeline**: Automated build, lint, unit testing, and debug APK artifact packaging in `.github/workflows/android.yml`.
 - **Unit Tests**: Test suites for format utilities, JSON syntax highlighting, and data model serialization.
+
+### Fixed
+- Added missing `androidx.compose.ui.graphics.Color` import in `Theme.kt`.
+- Migrated GitHub Actions `setup-java` step from `@v4` to `@v5`.
