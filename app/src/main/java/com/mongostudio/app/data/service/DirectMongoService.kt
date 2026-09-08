@@ -88,7 +88,7 @@ object DirectMongoService {
                     effectiveUri = effectiveUri
                 )
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             disconnect()
             Result.failure(e)
         }

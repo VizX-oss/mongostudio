@@ -6,8 +6,11 @@
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn javax.naming.**
+-dontwarn javax.security.sasl.**
+-keep class javax.security.sasl.** { *; }
 -dontwarn com.mongodb.**
 -dontwarn org.bson.**
 -keep class com.mongodb.** { *; }
 -keep class org.bson.** { *; }
+
 

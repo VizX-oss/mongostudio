@@ -33,4 +33,17 @@ class StandaloneMongoTest {
         assertTrue(ObjectId.isValid(hex))
         assertFalse(ObjectId.isValid("not-a-valid-hex-id"))
     }
+
+    @Test
+    fun testSaslClassesResolution() {
+        val saslClientClass = javax.security.sasl.SaslClient::class.java
+        assertTrue(saslClientClass.isInterface)
+
+        val exception = javax.security.sasl.AuthenticationException("Auth failed test")
+        assertTrue(exception is javax.security.sasl.SaslException)
+        assertEquals("Auth failed test", exception.message)
+
+        assertEquals("javax.security.sasl.qop", javax.security.sasl.Sasl.QOP)
+    }
 }
+
