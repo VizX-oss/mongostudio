@@ -1,6 +1,5 @@
 package com.mongostudio.app.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -31,8 +30,8 @@ fun ConnectionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    var uriText by remember { mutableStateOf("mongodb://localhost:27017") }
-    var clusterName by remember { mutableStateOf("My MongoDB") }
+    var uriText by remember { mutableStateOf("mongodb://10.0.2.2:27017") }
+    var clusterName by remember { mutableStateOf("Local MongoDB") }
     var saveConnection by remember { mutableStateOf(true) }
     var itemToDelete by remember { mutableStateOf<SavedConnection?>(null) }
 
@@ -45,14 +44,11 @@ fun ConnectionScreen(
     Scaffold(
         topBar = {
             TopHeader(
-                title = "MongoStudio",
-                subtitle = "Cluster Connection Manager",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
+                title = "MongoStudio Mobile",
+                subtitle = "Standalone Native Client",
                 isConnectedToCluster = false,
                 onSettingsClick = onNavigateToSettings,
                 onRefreshClick = {
-                    viewModel.testServerHealth()
                     viewModel.loadSavedConnections()
                 }
             )
@@ -66,7 +62,7 @@ fun ConnectionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Server Host Banner
+            // Standalone Architecture Badge
             item {
                 Box(
                     modifier = Modifier
@@ -76,35 +72,34 @@ fun ConnectionScreen(
                         .border(1.dp, CardBorderDark, MaterialTheme.shapes.medium)
                         .padding(14.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(MaterialTheme.shapes.extraSmall)
-                                        .background(if (uiState.isServerReachable) EmeraldPrimary else RoseAccent)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (uiState.isServerReachable) "Server Online (${uiState.serverPingMs ?: 0}ms)" else "Server Offline",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = if (uiState.isServerReachable) EmeraldLight else RoseAccent
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Endpoint: ${uiState.serverUrl}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .background(EmeraldContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = EmeraldLight,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        IconButton(onClick = onNavigateToSettings) {
-                            Icon(Icons.Default.Tune, contentDescription = "Configure Host", tint = EmeraldLight)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "100% Standalone & Direct",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Zero middleware servers. Connects directly to MongoDB Atlas or self-hosted clusters with built-in DoH SRV resolver & AES-256 encrypted vault.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
                         }
                     }
                 }
@@ -149,13 +144,13 @@ fun ConnectionScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "Connect to MongoDB",
+                            text = "Direct MongoDB Connection",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
                         Text(
-                            text = "Supports Atlas (mongodb+srv://) and Local (mongodb://)",
+                            text = "Supports Atlas (mongodb+srv://) and Direct TCP (mongodb://)",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
@@ -163,7 +158,7 @@ fun ConnectionScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // URI Input
-                        Text("Connection String", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                        Text("Connection URI", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = uriText,
@@ -195,7 +190,7 @@ fun ConnectionScreen(
                                 focusedBorderColor = EmeraldPrimary,
                                 unfocusedBorderColor = CardBorderDark
                             ),
-                            placeholder = { Text("e.g. Production Atlas or Local Dev", color = TextMuted) },
+                            placeholder = { Text("e.g. Production Cluster or Dev DB", color = TextMuted) },
                             singleLine = true
                         )
 
@@ -209,7 +204,7 @@ fun ConnectionScreen(
                         ) {
                             Column {
                                 Text("Save to Encrypted Vault", style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
-                                Text("Store credentials securely for one-tap access", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                                Text("AES-256 encrypted on this device for quick access", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                             }
                             Switch(
                                 checked = saveConnection,
@@ -239,18 +234,18 @@ fun ConnectionScreen(
                             if (uiState.isConnecting) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextOnPrimary, strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Text("Authenticating & Connecting...", fontWeight = FontWeight.SemiBold)
+                                Text("Resolving & Connecting Directly...", fontWeight = FontWeight.SemiBold)
                             } else {
                                 Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Connect to Cluster", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Text("Connect to MongoDB", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             }
 
-            // Saved Connections Section
+            // Encrypted Vault Section
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -281,7 +276,7 @@ fun ConnectionScreen(
                             Icon(Icons.Default.LockOpen, contentDescription = null, tint = TextMuted, modifier = Modifier.size(36.dp))
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("No saved connections yet", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
-                            Text("Saved clusters will appear here for fast one-tap reconnect.", style = MaterialTheme.typography.labelSmall, color = TextMuted)
+                            Text("Saved clusters will appear here with encrypted credentials.", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                         }
                     }
                 }

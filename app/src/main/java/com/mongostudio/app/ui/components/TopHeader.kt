@@ -21,9 +21,8 @@ import com.mongostudio.app.ui.theme.*
 fun TopHeader(
     title: String,
     subtitle: String? = null,
-    isServerReachable: Boolean,
-    serverPingMs: Long?,
     isConnectedToCluster: Boolean,
+    pingMs: Long? = null,
     onBackClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
     onConsoleClick: (() -> Unit)? = null,
@@ -59,7 +58,7 @@ fun TopHeader(
             }
         },
         actions = {
-            // Status Pill
+            // Standalone Connection Status Pill
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
@@ -72,14 +71,14 @@ fun TopHeader(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (isServerReachable) EmeraldPrimary else RoseAccent)
+                            .background(if (isConnectedToCluster) EmeraldPrimary else TextMuted)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = when {
-                            isConnectedToCluster -> "Cluster Live"
-                            isServerReachable -> "${serverPingMs ?: 0}ms"
-                            else -> "Offline"
+                            isConnectedToCluster && pingMs != null -> "Live • ${pingMs}ms"
+                            isConnectedToCluster -> "Connected"
+                            else -> "Standalone"
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isConnectedToCluster) EmeraldLight else TextSecondary,

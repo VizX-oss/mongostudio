@@ -1,24 +1,21 @@
 package com.mongostudio.app.viewmodel
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mongostudio.app.data.api.MongoStudioApiClient
 import com.mongostudio.app.data.model.*
+import com.mongostudio.app.data.service.DirectMongoService
+import com.mongostudio.app.data.vault.EncryptedVault
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class UiState(
-    val serverUrl: String = "http://10.0.2.2:4000",
-    val serverPingMs: Long? = null,
-    val isServerReachable: Boolean = false,
     val isConnectedToCluster: Boolean = false,
-    val connectionId: String? = null,
     val activeClusterName: String? = null,
     val activeClusterVersion: String? = null,
+    val activeClusterPingMs: Long? = null,
     val isConnecting: Boolean = false,
     val isLoading: Boolean = false,
     val overview: ClusterOverview? = null,
@@ -34,82 +31,52 @@ data class UiState(
     val pageSize: Int = 20,
     val indexes: List<IndexInfo> = emptyList(),
     val aggregateResult: AggregateResponse? = null,
-    val rawCommandResult: GenericApiResponse? = null,
+    val rawCommandResult: Map<String, Any?>? = null,
     val statusMessage: String? = null,
     val errorMessage: String? = null
 )
 
 class MongoStudioViewModel(application: Application) : AndroidViewModel(application) {
-    private val prefs = application.getSharedPreferences("mongostudio_prefs", Context.MODE_PRIVATE)
-    private val apiClient = MongoStudioApiClient()
+    private val vault = EncryptedVault(application)
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
-        val savedServerUrl = prefs.getString("server_url", "http://10.0.2.2:4000") ?: "http://10.0.2.2:4000"
-        _uiState.value = _uiState.value.copy(serverUrl = savedServerUrl)
-        apiClient.setBaseUrl(savedServerUrl)
-        testServerHealth()
         loadSavedConnections()
-    }
-
-    fun setServerUrl(newUrl: String) {
-        val clean = newUrl.trimEnd('/')
-        prefs.edit().putString("server_url", clean).apply()
-        apiClient.setBaseUrl(clean)
-        _uiState.value = _uiState.value.copy(serverUrl = clean)
-        testServerHealth()
-        loadSavedConnections()
-    }
-
-    fun testServerHealth() {
-        viewModelScope.launch {
-            val result = apiClient.healthCheck()
-            if (result.isSuccess) {
-                _uiState.value = _uiState.value.copy(
-                    isServerReachable = true,
-                    serverPingMs = result.getOrNull()
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    isServerReachable = false,
-                    serverPingMs = null
-                )
-            }
-        }
     }
 
     fun loadSavedConnections() {
-        viewModelScope.launch {
-            apiClient.getSavedConnections().onSuccess { list ->
-                _uiState.value = _uiState.value.copy(savedConnections = list)
-            }.onFailure {
-                // If offline, ignore
-            }
-        }
+        val list = vault.getSavedConnections()
+        _uiState.value = _uiState.value.copy(savedConnections = list)
     }
 
     fun connect(uri: String, name: String?, save: Boolean) {
-        if (uri.isBlank()) {
+        val cleanUri = uri.trim()
+        if (cleanUri.isBlank()) {
             _uiState.value = _uiState.value.copy(errorMessage = "MongoDB URI cannot be empty")
             return
         }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isConnecting = true, errorMessage = null)
-            val result = apiClient.connect(uri, name, save)
-            result.onSuccess { response ->
+            val result = DirectMongoService.connect(cleanUri)
+            result.onSuccess { info ->
+                val clusterName = name?.ifBlank { null } ?: "MongoDB Cluster"
+                if (save) {
+                    vault.saveConnection(clusterName, cleanUri)
+                    loadSavedConnections()
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isConnecting = false,
                     isConnectedToCluster = true,
-                    connectionId = response.connectionId,
-                    activeClusterName = name ?: "MongoDB Cluster",
-                    activeClusterVersion = response.serverVersion,
-                    statusMessage = "Connected successfully to cluster!"
+                    activeClusterName = clusterName,
+                    activeClusterVersion = info.serverVersion,
+                    activeClusterPingMs = info.pingMs,
+                    statusMessage = "Direct connection established! Ping: ${info.pingMs}ms"
                 )
                 loadOverview()
-                if (save) loadSavedConnections()
             }.onFailure { error ->
                 _uiState.value = _uiState.value.copy(
                     isConnecting = false,
@@ -121,16 +88,22 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
     fun connectSaved(saved: SavedConnection) {
         viewModelScope.launch {
+            val decryptedUri = vault.getDecryptedUri(saved.id)
+            if (decryptedUri == null) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Could not decrypt connection credentials from vault")
+                return@launch
+            }
+
             _uiState.value = _uiState.value.copy(isConnecting = true, errorMessage = null)
-            val result = apiClient.connectSaved(saved.id)
-            result.onSuccess { response ->
+            val result = DirectMongoService.connect(decryptedUri)
+            result.onSuccess { info ->
                 _uiState.value = _uiState.value.copy(
                     isConnecting = false,
                     isConnectedToCluster = true,
-                    connectionId = response.connectionId,
                     activeClusterName = saved.name,
-                    activeClusterVersion = response.serverVersion,
-                    statusMessage = "Connected to ${saved.name}!"
+                    activeClusterVersion = info.serverVersion,
+                    activeClusterPingMs = info.pingMs,
+                    statusMessage = "Connected to ${saved.name} (${info.pingMs}ms)"
                 )
                 loadOverview()
             }.onFailure { error ->
@@ -143,24 +116,19 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun deleteSaved(id: String) {
-        viewModelScope.launch {
-            apiClient.deleteSavedConnection(id).onSuccess {
-                loadSavedConnections()
-                _uiState.value = _uiState.value.copy(statusMessage = "Connection removed from vault")
-            }.onFailure { e ->
-                _uiState.value = _uiState.value.copy(errorMessage = e.localizedMessage)
-            }
-        }
+        vault.deleteConnection(id)
+        loadSavedConnections()
+        _uiState.value = _uiState.value.copy(statusMessage = "Connection removed from encrypted vault")
     }
 
     fun disconnect() {
         viewModelScope.launch {
-            apiClient.disconnect()
+            DirectMongoService.disconnect()
             _uiState.value = _uiState.value.copy(
                 isConnectedToCluster = false,
-                connectionId = null,
                 activeClusterName = null,
                 activeClusterVersion = null,
+                activeClusterPingMs = null,
                 overview = null,
                 selectedDatabase = null,
                 collections = emptyList(),
@@ -173,7 +141,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun loadOverview() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.getOverview().onSuccess { ov ->
+            DirectMongoService.getOverview().onSuccess { ov ->
                 _uiState.value = _uiState.value.copy(
                     overview = ov,
                     isLoading = false
@@ -199,7 +167,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun loadCollections(dbName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.getCollections(dbName).onSuccess { cols ->
+            DirectMongoService.getCollections(dbName).onSuccess { cols ->
                 _uiState.value = _uiState.value.copy(
                     collections = cols,
                     isLoading = false
@@ -216,7 +184,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun createCollection(dbName: String, colName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.createCollection(dbName, colName).onSuccess {
+            DirectMongoService.createCollection(dbName, colName).onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     statusMessage = "Collection '$colName' created"
@@ -235,7 +203,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun dropCollection(dbName: String, colName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.dropCollection(dbName, colName).onSuccess {
+            DirectMongoService.dropCollection(dbName, colName).onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     statusMessage = "Collection '$colName' dropped"
@@ -254,7 +222,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun dropDatabase(dbName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.dropDatabase(dbName).onSuccess {
+            DirectMongoService.dropDatabase(dbName).onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     selectedDatabase = null,
@@ -294,7 +262,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, currentPage = page)
-            val res = apiClient.queryDocuments(
+            val res = DirectMongoService.queryDocuments(
                 dbName = db,
                 colName = col,
                 filterJson = _uiState.value.filterJson.ifBlank { null },
@@ -323,10 +291,10 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.createDocument(db, col, docJson).onSuccess {
+            DirectMongoService.createDocument(db, col, docJson).onSuccess { insertedId ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    statusMessage = "Document inserted successfully!"
+                    statusMessage = "Document inserted: $insertedId"
                 )
                 runQuery()
             }.onFailure { err ->
@@ -344,16 +312,16 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.updateDocument(db, col, docId, docJson).onSuccess {
+            DirectMongoService.updateDocument(db, col, docId, docJson).onSuccess { count ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    statusMessage = "Document updated and pushed to MongoDB!"
+                    statusMessage = "Document updated ($count modified) directly in MongoDB!"
                 )
                 runQuery()
             }.onFailure { err ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = err.localizedMessage ?: "Update failed"
+                    errorMessage = err.localizedMessage ?: "Direct Push failed"
                 )
             }
         }
@@ -365,10 +333,10 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.deleteDocument(db, col, docId).onSuccess {
+            DirectMongoService.deleteDocument(db, col, docId).onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    statusMessage = "Document deleted"
+                    statusMessage = "Document deleted from collection"
                 )
                 runQuery()
             }.onFailure { err ->
@@ -386,7 +354,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, aggregateResult = null)
-            apiClient.aggregate(db, col, pipelineJson).onSuccess { res ->
+            DirectMongoService.aggregate(db, col, pipelineJson).onSuccess { res ->
                 _uiState.value = _uiState.value.copy(
                     aggregateResult = res,
                     isLoading = false,
@@ -403,22 +371,22 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
     fun loadIndexes(dbName: String, colName: String) {
         viewModelScope.launch {
-            apiClient.getIndexes(dbName, colName).onSuccess { idxs ->
+            DirectMongoService.getIndexes(dbName, colName).onSuccess { idxs ->
                 _uiState.value = _uiState.value.copy(indexes = idxs)
             }
         }
     }
 
-    fun createIndex(keysJson: String, optionsJson: String?) {
+    fun createIndex(keysJson: String, isUnique: Boolean) {
         val db = _uiState.value.selectedDatabase ?: return
         val col = _uiState.value.selectedCollection ?: return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.createIndex(db, col, keysJson, optionsJson).onSuccess {
+            DirectMongoService.createIndex(db, col, keysJson, isUnique).onSuccess { name ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    statusMessage = "Index created successfully"
+                    statusMessage = "Index '$name' created successfully"
                 )
                 loadIndexes(db, col)
             }.onFailure { err ->
@@ -436,7 +404,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            apiClient.dropIndex(db, col, indexName).onSuccess {
+            DirectMongoService.dropIndex(db, col, indexName).onSuccess {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     statusMessage = "Index '$indexName' dropped"
@@ -454,7 +422,7 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun executeRawCommand(dbName: String, commandJson: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, rawCommandResult = null)
-            apiClient.executeRawCommand(dbName, commandJson).onSuccess { res ->
+            DirectMongoService.executeRawCommand(dbName, commandJson).onSuccess { res ->
                 _uiState.value = _uiState.value.copy(
                     rawCommandResult = res,
                     isLoading = false,

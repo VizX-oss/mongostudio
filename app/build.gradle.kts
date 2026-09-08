@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.mongodb.driver.sync)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -49,9 +49,8 @@ fun DatabaseDetailScreen(
             TopHeader(
                 title = dbName,
                 subtitle = "Database Explorer",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack,
                 onRefreshClick = { viewModel.loadCollections(dbName) }
             )

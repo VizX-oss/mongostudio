@@ -47,9 +47,8 @@ fun IndexesScreen(
             TopHeader(
                 title = "Indexes",
                 subtitle = "$dbName • $colName",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack,
                 onRefreshClick = { viewModel.loadIndexes(dbName, colName) }
             )
@@ -217,8 +216,7 @@ fun IndexesScreen(
                         if (fieldName.isNotBlank()) {
                             val dir = if (isDescending) -1 else 1
                             val keysJson = """{"${fieldName.trim()}": $dir}"""
-                            val optionsJson = if (isUnique) """{"unique": true}""" else null
-                            viewModel.createIndex(keysJson, optionsJson)
+                            viewModel.createIndex(keysJson, isUnique)
                             showCreateIndexDialog = false
                             fieldName = ""
                         }

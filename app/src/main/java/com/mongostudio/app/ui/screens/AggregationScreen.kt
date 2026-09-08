@@ -45,9 +45,8 @@ fun AggregationScreen(
             TopHeader(
                 title = "Aggregation Pipeline",
                 subtitle = "$dbName • $colName",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack
             )
         },

@@ -35,9 +35,8 @@ fun ConsoleScreen(
             TopHeader(
                 title = "Database Console",
                 subtitle = "Raw Command Execution",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack
             )
         },
@@ -176,7 +175,7 @@ fun ConsoleScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     JsonViewerCard(
-                        data = cmdResult.result ?: mapOf("success" to cmdResult.success),
+                        data = cmdResult,
                         maxCollapsedLines = 15,
                         canCopy = true
                     )

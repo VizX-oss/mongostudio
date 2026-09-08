@@ -5,3 +5,9 @@
 }
 -dontwarn okhttp3.**
 -dontwarn okio.**
+-dontwarn javax.naming.**
+-dontwarn com.mongodb.**
+-dontwarn org.bson.**
+-keep class com.mongodb.** { *; }
+-keep class org.bson.** { *; }
+

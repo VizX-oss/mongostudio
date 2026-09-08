@@ -2,6 +2,15 @@
 
 All notable changes to the MongoStudio Android App will be documented in this file.
 
+## [1.1.0] - 2026-09-08
+
+### Changed & Enhanced (100% Standalone Native Architecture)
+- **Eliminated External Server Dependency**: Removed all requirements for any middleman Node.js server or proxy.
+- **Direct MongoDB Driver Integration**: Embedded `org.mongodb:mongodb-driver-sync:4.8.2` directly into the Android application to establish direct TCP/TLS wire protocol connections.
+- **Built-in DNS-over-HTTPS (DoH) SRV Resolver**: Added automatic resolution of `mongodb+srv://` Atlas URIs via DoH (Google & Cloudflare DNS) directly from the mobile device without JNDI or system naming limitations.
+- **Local On-Device Encrypted Vault**: Implemented PBKDF2 + AES-256 encrypted credential storage directly in Android SharedPreferences for saved connection profiles.
+- **Standalone Engine Service**: Added `DirectMongoService` handling native database exploration, BSON queries, direct push document editing, index management, aggregations, and raw database commands directly on Android.
+
 ## [1.0.0] - 2026-09-08
 
 ### Added

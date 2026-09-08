@@ -49,9 +49,8 @@ fun DashboardScreen(
             TopHeader(
                 title = uiState.activeClusterName ?: "MongoDB Cluster",
                 subtitle = "v${uiState.activeClusterVersion ?: "Unknown"}",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onRefreshClick = { viewModel.loadOverview() },
                 onConsoleClick = onNavigateToConsole,
                 onSettingsClick = onNavigateToSettings,

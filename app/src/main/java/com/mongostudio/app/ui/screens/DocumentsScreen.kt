@@ -59,9 +59,8 @@ fun DocumentsScreen(
             TopHeader(
                 title = colName,
                 subtitle = "$dbName • Documents",
-                isServerReachable = uiState.isServerReachable,
-                serverPingMs = uiState.serverPingMs,
                 isConnectedToCluster = true,
+                pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack,
                 onRefreshClick = { viewModel.runQuery() }
             )
