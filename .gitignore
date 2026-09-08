@@ -16,3 +16,5 @@ build/
 # Do not ignore Gradle wrapper jar
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+
+build_artifacts/
