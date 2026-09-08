@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.65"
+        android:scaleY="0.65"
+        android:translateX="18.9"
+        android:translateY="18.9">
+        <!-- Leaf / Database Shape -->
+        <path
+            android:fillColor="#10B981"
+            android:pathData="M54,12 C54,12 30,36 30,64 C30,77.25 40.75,88 54,96 C67.25,88 78,77.25 78,64 C78,36 54,12 54,12 Z" />
+        <path
+            android:fillColor="#059669"
+            android:pathData="M54,12 C54,12 54,96 54,96 C67.25,88 78,77.25 78,64 C78,36 54,12 54,12 Z" />
+        <path
+            android:fillColor="#A7F3D0"
+            android:pathData="M54,26 L54,82"
+            android:strokeWidth="3"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#03070b">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>MongoStudio Beast — Ultra-Fast MongoDB Explorer</title>
+
+  <!-- High-end Fonts & Libraries -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              green: '#00ED64',
+              teal: '#00A35C',
+              dark: '#03070b',
+              panel: '#081017',
+              card: '#0c1722',
+              border: '#152433',
+              borderLight: '#1e3347'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* iOS and Android safe-area insets */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+    html, body {
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .pt-safe { padding-top: max(var(--sat), 8px); }
+    .pb-safe { padding-bottom: max(var(--sab), 12px); }
+
+    /* Custom high performance scrollbars */
+    .touch-scroll {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 237, 100, 0.25) transparent;
+    }
+    .touch-scroll::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .touch-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0, 237, 100, 0.2);
+      border-radius: 9999px;
+    }
+    .touch-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 237, 100, 0.45);
+    }
+
+    /* Tactile button micro-animations */
+    .tap-scale {
+      transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), opacity 0.12s ease;
+    }
+    .tap-scale:active {
+      transform: scale(0.96);
+      opacity: 0.9;
+    }
+
+    /* Glass and panels */
+    .glass-dark {
+      background: rgba(8, 16, 23, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid #152433;
+    }
+    .glass-card {
+      background: rgba(12, 23, 34, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(30, 51, 71, 0.6);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(0, 237, 100, 0.4);
+    }
+
+    /* Modern glow */
+    .neon-glow {
+      box-shadow: 0 0 24px -4px rgba(0, 237, 100, 0.25);
+    }
+
+    /* Code editor styling */
+    pre code.hljs {
+      background: transparent !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+<body class="bg-[#03070b] text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-[#00ED64] selection:text-black">
+
+  <!-- Universal Toast Container -->
+  <div id="toastContainer" class="fixed top-3 left-3 right-3 sm:left-auto sm:right-5 sm:top-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ============================================== -->
+  <!-- 1. AUTH / CONNECT VIEW (FIRST SCREEN)          -->
+  <!-- ============================================== -->
+  <div id="connectView" class="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-gradient-to-b from-[#03070b] via-[#060e15] to-[#020508]">
+    
+    <!-- Ambient glowing backdrop -->
+    <div class="absolute -top-32 -left-32 w-72 h-72 sm:w-96 sm:h-96 bg-[#00ED64]/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-72 h-72 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="w-full max-w-lg glass-dark rounded-3xl p-5 sm:p-8 shadow-2xl relative z-10">
+      
+      <!-- Logo Header -->
+      <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-[#00ED64] to-teal-400 flex items-center justify-center shadow-lg shadow-[#00ED64]/20 flex-shrink-0">
+            <i data-lucide="database" class="w-6 h-6 text-black stroke-[2.5]"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">MongoStudio</h1>
+              <span class="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#00ED64]/15 text-[#00ED64] border border-[#00ED64]/30">BEAST</span>
+            </div>
+            <p class="text-xs text-slate-400">Ultra-fast MongoDB Management Suite</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Segmented Control: Connect vs Vault -->
+      <div class="grid grid-cols-2 bg-[#04090e] p-1 rounded-2xl border border-[#152433] mb-5 text-xs font-bold">
+        <button id="tabNewConnect" class="py-2.5 rounded-xl bg-[#00ED64] text-black shadow-md flex items-center justify-center gap-2 transition">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> Connect
+        </button>
+        <button id="tabSavedConnect" class="py-2.5 rounded-xl text-slate-400 hover:text-white flex items-center justify-center gap-2 transition">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i> Vault <span id="savedCountBadge" class="bg-slate-800 text-[10px] px-1.5 py-0.5 rounded-full text-slate-300">0</span>
+        </button>
+      </div>
+
+      <!-- Form 1: New Connection -->
+      <div id="newConnectForm" class="space-y-4">
+        <div>
+          <div class="flex items-center justify-between text-xs mb-1.5 font-bold text-slate-300">
+            <span>Connection String</span>
+            <span class="text-[10px] text-[#00ED64] font-mono font-normal">SRV or Standard</span>
+          </div>
+          <textarea id="mongoUriInput" rows="3" 
+            placeholder="mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster" 
+            class="w-full bg-[#04090e] text-xs sm:text-sm font-mono text-slate-100 placeholder-slate-600 rounded-2xl p-3 sm:p-3.5 border border-[#152433] focus:border-[#00ED64] focus:ring-1 focus:ring-[#00ED64] outline-none transition resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">Cluster Alias <span class="text-slate-500 font-normal text-[11px]">(Optional)</span></label>
+          <input type="text" id="clusterNickName" placeholder="e.g. Production Atlas, Staging, Localhost" 
+            class="w-full bg-[#04090e] text-xs sm:text-sm text-slate-100 placeholder-slate-600 rounded-xl px-3.5 py-2.5 border border-[#152433] focus:border-[#00ED64] outline-none transition">
+        </div>
+
+        <!-- AES-256 Vault Checkbox -->
+        <div class="bg-[#050f16] rounded-2xl p-3 sm:p-4 border border-[#152433] flex items-start gap-3">
+          <input type="checkbox" id="saveConnectionCheck" checked 
+            class="mt-0.5 w-4 h-4 rounded text-[#00ED64] bg-[#020508] border-[#1e3347] accent-[#00ED64] cursor-pointer">
+          <label for="saveConnectionCheck" class="text-xs text-slate-300 cursor-pointer select-none">
+            <span class="font-bold text-white flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#00ED64]"></i> Save in Encrypted Format (AES-256)
+            </span>
+            <span class="block text-slate-400 text-[11px] mt-0.5">Securely store encrypted credentials locally for fast 1-tap reconnect.</span>
+          </label>
+        </div>
+
+        <button id="btnConnect" class="tap-scale w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#00ED64] via-emerald-400 to-[#00ED64] text-black font-extrabold text-sm tracking-wide shadow-xl shadow-[#00ED64]/20 flex items-center justify-center gap-2">
+          <span id="btnConnectText">Connect to Database</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Presets -->
+        <div class="pt-1 flex items-center justify-between text-xs text-slate-500">
+          <span>Quick presets:</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="fillUri('mongodb://localhost:27017', 'Localhost')" class="text-slate-400 hover:text-[#00ED64] underline underline-offset-2">Localhost</button>
+            <span>•</span>
+            <button type="button" onclick="fillUri('mongodb+srv://admin:secret@cluster0.mongodb.net/test?retryWrites=true&w=majority', 'Atlas Sample')" class="text-slate-400 hover:text-[#00ED64] underline underline-offset-2">Atlas Sample</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form 2: Vault (Saved Connections) -->
+      <div id="savedConnectForm" class="hidden space-y-3">
+        <p class="text-xs text-slate-400">Stored credentials encrypted via AES-256 on the host.</p>
+        <div id="savedConnectionsList" class="space-y-2 max-h-72 overflow-y-auto pr-1 touch-scroll"></div>
+        <div id="noSavedConnections" class="text-center py-8 text-slate-500 text-xs">
+          No saved clusters yet. Connect with "Save in Encrypted Format" checked.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- 2. MAIN APPLICATION WORKSPACE                  -->
+  <!-- ============================================== -->
+  <div id="appView" class="hidden min-h-screen flex flex-col bg-[#03070b] pb-20 md:pb-0">
+
+    <!-- Top App Header -->
+    <header class="h-14 sm:h-16 glass-dark border-b border-[#152433] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 pt-safe">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <!-- Mobile Sidebar Toggle -->
+        <button onclick="toggleMobileSidebar()" class="tap-scale md:hidden p-2 rounded-xl bg-[#04090e] border border-[#152433] text-[#00ED64] flex-shrink-0" aria-label="Open Sidebar">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#00ED64] to-teal-400 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="database" class="w-4 h-4 text-black stroke-[2.5]"></i>
+        </div>
+
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 truncate">
+            <h2 class="font-bold text-xs sm:text-sm text-white truncate">MongoStudio</h2>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#00ED64] animate-pulse"></span>
+          </div>
+          <div class="flex items-center gap-1 text-[10px] sm:text-xs text-slate-400 truncate font-mono">
+            <span id="headerClusterName" class="text-[#00ED64] font-medium truncate max-w-[120px] sm:max-w-xs">Cluster</span>
+            <span>•</span>
+            <span id="headerServerVersion">v6.x</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Links -->
+      <div class="hidden md:flex items-center gap-1 bg-[#04090e] p-1 rounded-2xl border border-[#152433] text-xs font-bold">
+        <button onclick="switchView('dashboard')" id="navBtn-dashboard" class="px-3.5 py-1.5 rounded-xl text-black bg-[#00ED64] flex items-center gap-1.5 transition">
+          <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Dashboard
+        </button>
+        <button onclick="switchView('collections')" id="navBtn-collections" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i> Data Explorer
+        </button>
+        <button onclick="switchView('console')" id="navBtn-console" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+          <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Raw Console
+        </button>
+        <button onclick="switchView('backup')" id="navBtn-backup" class="px-3.5 py-1.5 rounded-xl text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+          <i data-lucide="hard-drive-download" class="w-3.5 h-3.5"></i> Backup / Restore
+        </button>
+      </div>
+
+      <!-- Header Action Group -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="openNewDatabaseModal()" class="tap-scale text-[11px] sm:text-xs bg-[#00ED64]/10 hover:bg-[#00ED64]/20 text-[#00ED64] border border-[#00ED64]/30 px-2.5 sm:px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">New DB / Collection</span><span class="sm:hidden">New</span>
+        </button>
+        <button onclick="disconnectSession()" class="tap-scale p-2 rounded-xl text-rose-400 hover:bg-rose-500/10 border border-rose-500/20" title="Disconnect Session">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Drawer Backdrop Overlay -->
+    <div id="sidebarBackdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-black/80 backdrop-blur-md z-40 hidden md:hidden transition-opacity duration-200"></div>
+
+    <!-- Main Workspace Split-Pane Body -->
+    <div class="flex-1 flex overflow-hidden relative">
+      
+      <!-- Off-Canvas (Mobile) / Fixed (Desktop) Sidebar -->
+      <aside id="sidebarDrawer" class="fixed md:static inset-y-0 left-0 z-50 w-72 md:w-64 lg:w-72 bg-[#050b10] md:bg-[#050b10]/90 border-r border-[#152433] flex flex-col flex-shrink-0 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out shadow-2xl md:shadow-none">
+        
+        <!-- Drawer Header -->
+        <div class="p-3.5 sm:p-4 border-b border-[#152433] flex items-center justify-between pt-safe md:pt-4">
+          <div class="flex items-center gap-2 text-xs font-extrabold text-white">
+            <i data-lucide="compass" class="w-4 h-4 text-[#00ED64]"></i>
+            <span>Cluster Explorer</span>
+          </div>
+          <button onclick="closeMobileSidebar()" class="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Filter Search Bar -->
+        <div class="p-3 border-b border-[#152433]">
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5"></i>
+            <input type="text" id="sidebarSearchInput" placeholder="Filter databases..." 
+              oninput="filterSidebarDatabases(this.value)"
+              class="w-full bg-[#03070b] text-xs text-slate-200 placeholder-slate-600 rounded-xl pl-8 pr-3 py-1.5 border border-[#152433] focus:border-[#00ED64] outline-none">
+          </div>
+        </div>
+
+        <!-- Database & Collections Tree -->
+        <div class="flex-1 overflow-y-auto p-2 space-y-1 touch-scroll" id="sidebarDbTree">
+          <div class="text-center py-8 text-xs text-slate-500">Loading catalog...</div>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-[#152433] bg-[#03070b] flex items-center justify-between text-[11px] text-slate-400 pb-safe md:pb-3">
+          <span id="sidebarTotalDbs">0 Databases</span>
+          <button onclick="refreshOverview()" class="text-[#00ED64] hover:underline flex items-center gap-1 font-semibold">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh
+          </button>
+        </div>
+      </aside>
+
+      <!-- Scrollable Main View Area -->
+      <main class="flex-1 overflow-y-auto p-3 sm:p-6 w-full touch-scroll">
+        
+        <!-- ============================================== -->
+        <!-- VIEW A: CLUSTER OVERVIEW / DASHBOARD           -->
+        <!-- ============================================== -->
+        <section id="viewDashboard" class="space-y-4 max-w-7xl mx-auto">
+          
+          <!-- Metrics Grid -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            
+            <div class="glass-card rounded-2xl p-3.5 sm:p-4 border-l-4 border-l-[#00ED64]">
+              <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Storage</span>
+                <i data-lucide="hard-drive" class="w-4 h-4 text-[#00ED64]"></i>
+              </div>
+              <div class="text-base sm:text-2xl font-black text-white" id="statTotalSize">-- MB</div>
+              <p class="text-[10px] text-slate-500 mt-0.5 truncate">Total Disk Usage</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-3.5 sm:p-4 border-l-4 border-l-cyan-400">
+              <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Databases</span>
+                <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+              </div>
+              <div class="text-base sm:text-2xl font-black text-white" id="statTotalDbs">0</div>
+              <p class="text-[10px] text-slate-500 mt-0.5 truncate">Namespaces</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-3.5 sm:p-4 border-l-4 border-l-purple-400">
+              <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Collections</span>
+                <i data-lucide="layers" class="w-4 h-4 text-purple-400"></i>
+              </div>
+              <div class="text-base sm:text-2xl font-black text-white" id="statTotalCollections">0</div>
+              <p class="text-[10px] text-slate-500 mt-0.5 truncate">Across Cluster</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-3.5 sm:p-4 border-l-4 border-l-amber-400">
+              <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Server</span>
+                <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i>
+              </div>
+              <div class="text-sm sm:text-xl font-black text-white truncate" id="statServerVersion">Connected</div>
+              <p class="text-[10px] text-[#00ED64] mt-0.5 truncate flex items-center gap-1 font-semibold">
+                <i data-lucide="check" class="w-3 h-3"></i> Healthy Ping
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Quick Actions & Navigation Bar -->
+          <div class="glass-dark rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-white text-xs sm:text-sm">Database Catalog</h3>
+              <p class="text-[11px] text-slate-400">Explore collections, document volumes, and schema</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="toggleMobileSidebar()" class="md:hidden flex-1 py-2 px-3 rounded-xl bg-[#04090e] border border-[#152433] text-xs font-semibold text-[#00ED64] flex items-center justify-center gap-1.5 tap-scale">
+                <i data-lucide="compass" class="w-3.5 h-3.5"></i> Open Tree
+              </button>
+              <button onclick="openNewDatabaseModal()" class="flex-1 sm:flex-none py-2 px-3.5 rounded-xl bg-[#00ED64] text-black text-xs font-extrabold flex items-center justify-center gap-1.5 tap-scale shadow-md shadow-[#00ED64]/20">
+                <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i> Create DB
+              </button>
+            </div>
+          </div>
+
+          <!-- Database Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="dashboardDbsGrid"></div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW B: COLLECTIONS & DATA EXPLORER            -->
+        <!-- ============================================== -->
+        <section id="viewCollections" class="hidden space-y-3 max-w-7xl mx-auto">
+          
+          <!-- Context Header & Action Toolbar -->
+          <div class="glass-dark rounded-2xl p-3 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <button onclick="toggleMobileSidebar()" class="md:hidden p-1.5 rounded-xl bg-[#04090e] border border-[#152433] text-[#00ED64] flex-shrink-0" title="Explorer">
+                  <i data-lucide="compass" class="w-4 h-4"></i>
+                </button>
+                <div class="flex items-center gap-1 text-[11px] sm:text-xs font-mono truncate">
+                  <span class="px-2.5 py-0.5 rounded-lg bg-[#04090e] border border-[#152433] text-[#00ED64] font-bold truncate max-w-[110px] sm:max-w-xs" id="currentDbLabel">DB</span>
+                  <span class="text-slate-600">/</span>
+                  <span class="px-2.5 py-0.5 rounded-lg bg-[#04090e] border border-[#152433] text-cyan-400 font-bold truncate max-w-[130px] sm:max-w-xs" id="currentColLabel">Collection</span>
+                </div>
+              </div>
+
+              <!-- View switch -->
+              <div class="bg-[#04090e] p-0.5 rounded-xl border border-[#152433] flex items-center text-xs">
+                <button id="viewModeTableBtn" onclick="setDocViewMode('table')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white flex items-center gap-1">
+                  <i data-lucide="table" class="w-3 h-3"></i> <span class="hidden sm:inline">Table</span>
+                </button>
+                <button id="viewModeJsonBtn" onclick="setDocViewMode('json')" class="px-2.5 py-1 rounded-lg bg-[#00ED64]/20 text-[#00ED64] font-bold flex items-center gap-1">
+                  <i data-lucide="code" class="w-3 h-3"></i> <span class="hidden sm:inline">JSON</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Action buttons horizontal row -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-0.5 touch-scroll">
+              <button onclick="openAddDocumentModal()" class="tap-scale py-1.5 px-3.5 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs flex items-center gap-1 flex-shrink-0 shadow-md shadow-[#00ED64]/20">
+                <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[3]"></i> Insert Document
+              </button>
+              <button onclick="openImportModal()" class="tap-scale py-1.5 px-3 rounded-xl bg-[#04090e] border border-[#152433] text-slate-200 text-xs font-semibold flex items-center gap-1 flex-shrink-0">
+                <i data-lucide="upload" class="w-3.5 h-3.5 text-cyan-400"></i> Import JSON
+              </button>
+              <button onclick="exportCurrentCollection()" class="tap-scale py-1.5 px-3 rounded-xl bg-[#04090e] border border-[#152433] text-slate-200 text-xs font-semibold flex items-center gap-1 flex-shrink-0">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i> Export JSON
+              </button>
+              <button onclick="runQuery(currentPage)" class="tap-scale py-1.5 px-3 rounded-xl bg-[#04090e] border border-[#152433] text-slate-200 text-xs font-semibold flex items-center gap-1 flex-shrink-0">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-[#00ED64]"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Query Filter Accordion -->
+          <div class="glass-dark rounded-2xl p-3 sm:p-4 space-y-2.5">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3">
+              <div class="md:col-span-6">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <i data-lucide="filter" class="w-3 h-3 text-[#00ED64]"></i> Filter JSON
+                </label>
+                <input type="text" id="queryFilterInput" placeholder='{"status": "active"}' 
+                  class="w-full bg-[#04090e] text-xs font-mono text-[#00ED64] rounded-xl px-3 py-2 border border-[#152433] focus:border-[#00ED64] outline-none">
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <i data-lucide="arrow-down-up" class="w-3 h-3 text-cyan-400"></i> Sort JSON
+                </label>
+                <input type="text" id="querySortInput" placeholder='{"createdAt": -1}' 
+                  class="w-full bg-[#04090e] text-xs font-mono text-cyan-300 rounded-xl px-3 py-2 border border-[#152433] focus:border-cyan-400 outline-none">
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <i data-lucide="eye" class="w-3 h-3 text-purple-400"></i> Project Fields
+                </label>
+                <input type="text" id="queryProjectInput" placeholder='{"password": 0}' 
+                  class="w-full bg-[#04090e] text-xs font-mono text-purple-300 rounded-xl px-3 py-2 border border-[#152433] focus:border-purple-400 outline-none">
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <div class="text-[11px] text-slate-400 font-mono">
+                Total: <strong id="queryTotalCount" class="text-white">0</strong> • Pg: <span id="queryCurrentPage">1</span>/<span id="queryTotalPages">1</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="resetQueryFilters()" class="text-xs text-slate-400 hover:text-slate-200 px-2 py-1">Reset</button>
+                <button onclick="runQuery(1)" class="tap-scale py-1 px-4 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs flex items-center gap-1">
+                  <i data-lucide="play" class="w-3 h-3 fill-black"></i> Execute Find
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document List Content -->
+          <div id="documentsListContainer" class="space-y-2.5 min-h-[200px]"></div>
+
+          <!-- Pagination Bar -->
+          <div class="glass-dark rounded-xl p-2.5 flex items-center justify-between text-xs font-medium">
+            <span id="paginationRange" class="text-slate-400 text-[11px]">0 documents</span>
+            <div class="flex items-center gap-1.5">
+              <button id="btnPrevPage" onclick="changePage(-1)" class="px-3 py-1 rounded-lg bg-[#04090e] border border-[#152433] text-slate-300 disabled:opacity-40">Prev</button>
+              <button id="btnNextPage" onclick="changePage(1)" class="px-3 py-1 rounded-lg bg-[#04090e] border border-[#152433] text-slate-300 disabled:opacity-40">Next</button>
+            </div>
+          </div>
+
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW C: RAW MONGO COMMAND CONSOLE              -->
+        <!-- ============================================== -->
+        <section id="viewConsole" class="hidden space-y-4 max-w-5xl mx-auto">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">MongoDB Raw Command Console</h2>
+            <p class="text-xs text-slate-400">Execute administrative or arbitrary commands directly (e.g. <code class="text-[#00ED64]">{"ping": 1}</code> or <code class="text-[#00ED64]">{"serverStatus": 1}</code>).</p>
+          </div>
+
+          <div class="glass-dark rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-300">Command (JSON)</label>
+              <select id="rawConsoleDbSelect" class="bg-[#04090e] text-xs text-slate-200 rounded-lg px-2.5 py-1 border border-[#152433] outline-none">
+                <option value="admin">admin database</option>
+              </select>
+            </div>
+            
+            <textarea id="rawCommandInput" rows="4" 
+              class="w-full bg-[#04090e] text-xs font-mono text-[#00ED64] p-3 rounded-xl border border-[#152433] focus:border-[#00ED64] outline-none resize-none"
+              placeholder='{ "ping": 1 }'></textarea>
+
+            <div class="flex items-center justify-between">
+              <div class="flex gap-2">
+                <button type="button" onclick="setRawCommand('{ \"ping\": 1 }')" class="text-[11px] text-slate-400 hover:text-[#00ED64]">ping</button>
+                <span class="text-slate-600">•</span>
+                <button type="button" onclick="setRawCommand('{ \"serverStatus\": 1 }')" class="text-[11px] text-slate-400 hover:text-[#00ED64]">serverStatus</button>
+                <span class="text-slate-600">•</span>
+                <button type="button" onclick="setRawCommand('{ \"listDatabases\": 1 }')" class="text-[11px] text-slate-400 hover:text-[#00ED64]">listDatabases</button>
+              </div>
+              <button onclick="executeRawCommand()" class="tap-scale px-4 py-2 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs flex items-center gap-1.5">
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-black"></i> Run Command
+              </button>
+            </div>
+          </div>
+
+          <!-- Console Output Window -->
+          <div class="glass-dark rounded-2xl p-4 space-y-2">
+            <span class="text-xs font-bold text-slate-400">Response Output</span>
+            <pre id="rawCommandOutput" class="bg-[#03070b] p-3.5 rounded-xl overflow-x-auto text-[11px] font-mono leading-relaxed touch-scroll text-slate-400 min-h-[140px]">// Run a command to see results...</pre>
+          </div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW D: BACKUP & RESTORE                       -->
+        <!-- ============================================== -->
+        <section id="viewBackup" class="hidden space-y-4 max-w-5xl mx-auto">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white">Disaster Recovery & Backup</h2>
+            <p class="text-xs text-slate-400">Perform standard binary mongodump & restore with gzip compression.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            
+            <!-- Backup Card -->
+            <div class="glass-card rounded-2xl p-4 space-y-3 border-l-4 border-l-[#00ED64]">
+              <div class="flex items-center gap-2.5">
+                <div class="p-2 bg-[#00ED64]/10 rounded-xl text-[#00ED64]">
+                  <i data-lucide="archive" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white">Cluster / DB Dump</h3>
+                  <p class="text-[11px] text-slate-400">mongodump binary (.archive.gz)</p>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Backup Scope</label>
+                <select id="backupDbSelect" class="w-full bg-[#04090e] text-xs text-slate-200 rounded-xl px-3 py-2 border border-[#152433] focus:border-[#00ED64] outline-none">
+                  <option value="">Full Cluster (All Databases)</option>
+                </select>
+              </div>
+
+              <button onclick="triggerMongodump()" id="btnStartDump" 
+                class="tap-scale w-full py-2.5 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#00ED64]/20">
+                <i data-lucide="download" class="w-4 h-4"></i> Download Archive (.gz)
+              </button>
+            </div>
+
+            <!-- Restore Card -->
+            <div class="glass-card rounded-2xl p-4 space-y-3 border-l-4 border-l-cyan-400">
+              <div class="flex items-center gap-2.5">
+                <div class="p-2 bg-cyan-500/10 rounded-xl text-cyan-400">
+                  <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white">Cluster / DB Restore</h3>
+                  <p class="text-[11px] text-slate-400">mongorestore binary</p>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Upload Archive (.gz)</label>
+                <input type="file" id="restoreArchiveFileInput" accept=".gz,.archive"
+                  class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/10 file:text-cyan-300">
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="dropBeforeRestoreCheck" class="w-4 h-4 rounded bg-[#04090e] border-[#152433] accent-cyan-500 cursor-pointer">
+                <label for="dropBeforeRestoreCheck" class="text-xs text-slate-300 cursor-pointer select-none">
+                  Drop collections before restore (<span class="text-rose-400 font-mono">--drop</span>)
+                </label>
+              </div>
+
+              <button onclick="triggerMongorestore()" id="btnStartRestore"
+                class="tap-scale w-full py-2.5 rounded-xl bg-cyan-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i> Execute Restore
+              </button>
+            </div>
+
+          </div>
+
+          <!-- JSON Export Card -->
+          <div class="glass-dark rounded-2xl p-4 space-y-3">
+            <h3 class="text-sm font-bold text-white">JSON Archive Export</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Target DB</label>
+                <select id="exportJsonDbSelect" class="w-full bg-[#04090e] text-xs text-slate-200 rounded-xl px-3 py-2 border border-[#152433] outline-none" onchange="onExportDbChanged(this.value)">
+                  <option value="">Select database...</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Collection</label>
+                <select id="exportJsonColSelect" class="w-full bg-[#04090e] text-xs text-slate-200 rounded-xl px-3 py-2 border border-[#152433] outline-none">
+                  <option value="">All Collections (.ZIP)</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button onclick="downloadJsonExport()" class="tap-scale w-full py-2 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center justify-center gap-1.5">
+                  <i data-lucide="file-down" class="w-4 h-4"></i> Download JSON
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Mobile Persistent Bottom Dock -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 glass-dark border-t border-[#152433] z-40 px-2 flex items-center justify-around pb-safe">
+      <button onclick="switchView('dashboard')" id="mobileNav-dashboard" class="flex flex-col items-center gap-1 text-[#00ED64] py-1 px-3 tap-scale">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+        <span class="text-[10px] font-bold">Dashboard</span>
+      </button>
+
+      <button onclick="switchView('collections')" id="mobileNav-collections" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3 tap-scale">
+        <i data-lucide="layers" class="w-4 h-4"></i>
+        <span class="text-[10px] font-semibold">Data</span>
+      </button>
+
+      <button onclick="toggleMobileSidebar()" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3 tap-scale">
+        <i data-lucide="compass" class="w-4 h-4"></i>
+        <span class="text-[10px] font-semibold">Explorer</span>
+      </button>
+
+      <button onclick="switchView('console')" id="mobileNav-console" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3 tap-scale">
+        <i data-lucide="terminal" class="w-4 h-4"></i>
+        <span class="text-[10px] font-semibold">Console</span>
+      </button>
+
+      <button onclick="switchView('backup')" id="mobileNav-backup" class="flex flex-col items-center gap-1 text-slate-400 py-1 px-3 tap-scale">
+        <i data-lucide="hard-drive-download" class="w-4 h-4"></i>
+        <span class="text-[10px] font-semibold">Backup</span>
+      </button>
+    </nav>
+
+  </div>
+
+
+  <!-- ============================================== -->
+  <!-- MODALS                                         -->
+  <!-- ============================================== -->
+
+  <!-- Document Edit Modal -->
+  <div id="modalDocument" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="w-full sm:max-w-3xl glass-dark sm:rounded-2xl rounded-t-2xl p-4 flex flex-col h-[92vh] sm:h-auto sm:max-h-[85vh]">
+      <div class="flex items-center justify-between pb-2.5 border-b border-[#152433]">
+        <div>
+          <h3 id="modalDocumentTitle" class="text-sm font-bold text-white">Edit Document</h3>
+          <p class="text-[10px] text-slate-400">Push changes directly to MongoDB</p>
+        </div>
+        <button onclick="closeModal('modalDocument')" class="p-1.5 rounded-lg text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 py-2.5 flex flex-col min-h-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-bold text-slate-300">Document Payload (JSON)</span>
+          <button type="button" onclick="formatDocEditorJson()" class="text-[11px] text-[#00ED64] hover:underline font-semibold">Prettify JSON</button>
+        </div>
+        <textarea id="modalDocTextarea" class="flex-1 w-full bg-[#03070b] text-xs font-mono text-[#00ED64] p-3 rounded-xl border border-[#152433] focus:border-[#00ED64] outline-none resize-none"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between pt-2.5 border-t border-[#152433] pb-safe sm:pb-0">
+        <div id="modalDocStatus" class="text-[10px] text-slate-400 truncate max-w-[150px]"></div>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal('modalDocument')" class="px-3 py-1.5 rounded-xl text-xs text-slate-300">Cancel</button>
+          <button onclick="saveDocumentDirectPush()" id="btnSaveDocDirect" class="tap-scale px-4 py-2 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs flex items-center gap-1.5 shadow-md shadow-[#00ED64]/20">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> Push Changes Directly
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create DB / Col Modal -->
+  <div id="modalCreateDbCol" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-3">
+    <div class="w-full max-w-sm glass-dark rounded-2xl p-4 space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-[#152433]">
+        <h3 class="text-sm font-bold text-white">Create Database / Collection</h3>
+        <button onclick="closeModal('modalCreateDbCol')" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-2.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Database Name</label>
+          <input type="text" id="createDbNameInput" placeholder="e.g. my_database" class="w-full bg-[#03070b] text-xs text-white rounded-xl px-3 py-2 border border-[#152433] focus:border-[#00ED64] outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Collection Name</label>
+          <input type="text" id="createColNameInput" placeholder="e.g. users" class="w-full bg-[#03070b] text-xs text-white rounded-xl px-3 py-2 border border-[#152433] focus:border-[#00ED64] outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#152433]">
+        <button onclick="closeModal('modalCreateDbCol')" class="px-3 py-1.5 rounded-xl text-xs text-slate-300">Cancel</button>
+        <button onclick="submitCreateDbCol()" class="tap-scale px-4 py-1.5 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import JSON Modal -->
+  <div id="modalImport" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-3">
+    <div class="w-full max-w-sm glass-dark rounded-2xl p-4 space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-[#152433]">
+        <h3 class="text-sm font-bold text-white">Import JSON Documents</h3>
+        <button onclick="closeModal('modalImport')" class="p-1 text-slate-400"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <p class="text-xs text-slate-400">Select a <code class="text-[#00ED64]">.json</code> file to import into the current collection.</p>
+      
+      <input type="file" id="importJsonFileInput" accept=".json"
+        class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#00ED64]/10 file:text-[#00ED64]">
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-[#152433]">
+        <button onclick="closeModal('modalImport')" class="px-3 py-1.5 rounded-xl text-xs text-slate-300">Cancel</button>
+        <button onclick="submitImportJson()" id="btnSubmitImport" class="tap-scale px-4 py-1.5 rounded-xl bg-[#00ED64] text-black font-extrabold text-xs">Upload & Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
