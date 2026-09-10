@@ -12,10 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mongostudio.app.ui.theme.*
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ConfirmDialog(
     title: String,
@@ -25,6 +27,7 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val accentColor = if (isDestructive) RoseAccent else AmberAccent
 
     AlertDialog(
@@ -53,7 +56,7 @@ fun ConfirmDialog(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLargeEmphasized,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -66,18 +69,27 @@ fun ConfirmDialog(
         },
         confirmButton = {
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    haptic.performConfirmFeedback()
+                    onConfirm()
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accentColor,
                     contentColor = Color.White
                 ),
-                shape = PillShape
+                shape = PillShape,
+                modifier = Modifier.pressMorph()
             ) {
                 Text(confirmText, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = {
+                    haptic.performClickFeedback()
+                    onDismiss()
+                }
+            ) {
                 Text("Cancel", color = TextSecondary)
             }
         }

@@ -42,11 +42,13 @@ fun ExpressiveSplitButton(
     contentColor: Color = TextOnPrimary,
     enabled: Boolean = true
 ) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     val primaryInteraction = remember { MutableInteractionSource() }
     val isPrimaryPressed by primaryInteraction.collectIsPressedAsState()
     val primaryScale by animateFloatAsState(
         targetValue = if (isPrimaryPressed) 0.96f else 1.0f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "primary_scale"
     )
 
@@ -54,7 +56,7 @@ fun ExpressiveSplitButton(
     val isTrailingPressed by trailingInteraction.collectIsPressedAsState()
     val trailingScale by animateFloatAsState(
         targetValue = if (isTrailingPressed) 0.94f else 1.0f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "trailing_scale"
     )
 
@@ -74,7 +76,10 @@ fun ExpressiveSplitButton(
                     interactionSource = primaryInteraction,
                     indication = ripple(color = contentColor),
                     enabled = enabled,
-                    onClick = onPrimaryClick
+                    onClick = {
+                        haptics.performClickFeedback()
+                        onPrimaryClick()
+                    }
                 )
                 .padding(horizontal = 20.dp),
             contentAlignment = Alignment.Center
@@ -116,7 +121,10 @@ fun ExpressiveSplitButton(
                     interactionSource = trailingInteraction,
                     indication = ripple(color = contentColor),
                     enabled = enabled,
-                    onClick = onTrailingClick
+                    onClick = {
+                        haptics.performClickFeedback()
+                        onTrailingClick()
+                    }
                 ),
             contentAlignment = Alignment.Center
         ) {

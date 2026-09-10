@@ -29,13 +29,15 @@ fun MetricCard(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     subValue: String? = null,
-    accentColor: Color = EmeraldPrimary
+    accentColor: Color = EmeraldPrimary,
+    onClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
             .clip(AsymmetricCardShape)
             .background(SurfaceContainer)
             .border(1.dp, CardBorderDark, AsymmetricCardShape)
+            .pressMorph(onClick = onClick)
             .padding(16.dp)
     ) {
         Column {
@@ -72,8 +74,7 @@ fun MetricCard(
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.headlineSmallEmphasized,
                 color = TextPrimary,
                 letterSpacing = (-0.5).sp
             )

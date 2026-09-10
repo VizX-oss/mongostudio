@@ -8,7 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +25,7 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AggregationScreen(
     dbName: String,
@@ -31,6 +33,7 @@ fun AggregationScreen(
     viewModel: MongoStudioViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
 
     var pipelineText by remember {
@@ -83,7 +86,8 @@ fun AggregationScreen(
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
                                 .border(1.dp, AmberAccent.copy(alpha = 0.3f), PillShape)
-                                .clickable {
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
                                     pipelineText = """[
   {
     "${'$'}group": {
@@ -92,7 +96,7 @@ fun AggregationScreen(
     }
   }
 ]"""
-                                }
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("${'$'}group by status", style = MaterialTheme.typography.labelSmall, color = AmberAccent, fontWeight = FontWeight.SemiBold)
@@ -103,7 +107,8 @@ fun AggregationScreen(
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
                                 .border(1.dp, CyanAccent.copy(alpha = 0.3f), PillShape)
-                                .clickable {
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
                                     pipelineText = """[
   {
     "${'$'}sort": { "_id": -1 }
@@ -112,7 +117,7 @@ fun AggregationScreen(
     "${'$'}limit": 10
   }
 ]"""
-                                }
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("${'$'}sort & limit 10", style = MaterialTheme.typography.labelSmall, color = CyanAccent, fontWeight = FontWeight.SemiBold)
@@ -123,7 +128,8 @@ fun AggregationScreen(
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
                                 .border(1.dp, PurpleAccent.copy(alpha = 0.3f), PillShape)
-                                .clickable {
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
                                     pipelineText = """[
   {
     "${'$'}match": { "count": { "${'$'}gt": 0 } }
@@ -132,7 +138,7 @@ fun AggregationScreen(
     "${'$'}project": { "name": 1, "count": 1 }
   }
 ]"""
-                                }
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("${'$'}match & project", style = MaterialTheme.typography.labelSmall, color = PurpleAccent, fontWeight = FontWeight.SemiBold)
@@ -170,7 +176,7 @@ fun AggregationScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = "Pipeline Stages",
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.titleMediumEmphasized,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
@@ -214,9 +220,14 @@ fun AggregationScreen(
                         }
 
                         Button(
-                            onClick = { viewModel.runAggregate(pipelineText) },
+                            onClick = {
+                                haptic.performClickFeedback()
+                                viewModel.runAggregate(pipelineText)
+                            },
                             enabled = !uiState.isLoading,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .pressMorph(),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = EmeraldPrimary,
                                 contentColor = TextOnPrimary
@@ -261,7 +272,7 @@ fun AggregationScreen(
                     ) {
                         Text(
                             text = "Pipeline Output",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleMediumEmphasized,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
@@ -288,20 +299,22 @@ fun AggregationScreen(
                         }
                     }
                 } else {
-                    items(aggResult.results) { resItem ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(SquircleMedium)
-                                .background(SurfaceContainer)
-                                .border(1.dp, CardBorderDark, SquircleMedium)
-                                .padding(14.dp)
-                        ) {
-                            JsonViewerCard(
-                                data = resItem,
-                                maxCollapsedLines = 10,
-                                canCopy = true
-                            )
+                    itemsIndexed(aggResult.results) { idx, resItem ->
+                        StaggerEntrance(index = idx) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(SquircleMedium)
+                                    .background(SurfaceContainer)
+                                    .border(1.dp, CardBorderDark, SquircleMedium)
+                                    .padding(14.dp)
+                            ) {
+                                JsonViewerCard(
+                                    data = resItem,
+                                    maxCollapsedLines = 10,
+                                    canCopy = true
+                                )
+                            }
                         }
                     }
                 }

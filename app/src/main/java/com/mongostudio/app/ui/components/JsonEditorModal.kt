@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +25,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.mongostudio.app.ui.theme.*
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun JsonEditorModal(
     title: String,
@@ -33,6 +35,7 @@ fun JsonEditorModal(
     confirmButtonText: String = "Push to DB",
     isLoading: Boolean = false
 ) {
+    val haptic = LocalHapticFeedback.current
     var text by remember { mutableStateOf(initialJson) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val prettyGson = remember { GsonBuilder().setPrettyPrinting().create() }
@@ -194,12 +197,18 @@ fun JsonEditorModal(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TextButton(onClick = onDismiss) {
+                        TextButton(
+                            onClick = {
+                                haptic.performClickFeedback()
+                                onDismiss()
+                            }
+                        ) {
                             Text("Cancel", color = TextSecondary)
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Button(
                             onClick = {
+                                haptic.performClickFeedback()
                                 if (validate()) {
                                     onSave(text)
                                 }
@@ -209,7 +218,8 @@ fun JsonEditorModal(
                                 containerColor = EmeraldPrimary,
                                 contentColor = TextOnPrimary
                             ),
-                            shape = PillShape
+                            shape = PillShape,
+                            modifier = Modifier.pressMorph()
                         ) {
                             Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))

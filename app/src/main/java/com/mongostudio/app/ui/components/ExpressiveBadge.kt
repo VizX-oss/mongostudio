@@ -85,12 +85,14 @@ fun ExpressiveTag(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     containerColor: Color = SurfaceContainerHighest,
-    contentColor: Color = TextPrimary
+    contentColor: Color = TextPrimary,
+    onClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
             .clip(PillShape)
             .background(containerColor)
+            .pressMorph(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Row(

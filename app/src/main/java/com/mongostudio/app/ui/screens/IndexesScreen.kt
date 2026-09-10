@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +24,7 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun IndexesScreen(
     dbName: String,
@@ -30,6 +32,7 @@ fun IndexesScreen(
     viewModel: MongoStudioViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     var showCreateIndexDialog by remember { mutableStateOf(false) }
     var fieldName by remember { mutableStateOf("") }
@@ -50,7 +53,10 @@ fun IndexesScreen(
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack,
-                onRefreshClick = { viewModel.loadIndexes(dbName, colName) }
+                onRefreshClick = {
+                    haptic.performClickFeedback()
+                    viewModel.loadIndexes(dbName, colName)
+                }
             )
         },
         bottomBar = {
@@ -60,16 +66,24 @@ fun IndexesScreen(
                         id = "refresh",
                         icon = Icons.Default.Refresh,
                         contentDescription = "Refresh Indexes",
-                        onClick = { viewModel.loadIndexes(dbName, colName) }
+                        onClick = {
+                            haptic.performClickFeedback()
+                            viewModel.loadIndexes(dbName, colName)
+                        }
                     )
                 ),
                 floatingActionButton = {
                     FloatingActionButton(
-                        onClick = { showCreateIndexDialog = true },
+                        onClick = {
+                            haptic.performClickFeedback()
+                            showCreateIndexDialog = true
+                        },
                         containerColor = EmeraldPrimary,
                         contentColor = TextOnPrimary,
                         shape = PillShape,
-                        modifier = Modifier.height(44.dp)
+                        modifier = Modifier
+                            .height(44.dp)
+                            .pressMorph()
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp),
@@ -100,7 +114,7 @@ fun IndexesScreen(
                 ) {
                     Text(
                         text = "Active Indexes (${uiState.indexes.size})",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
@@ -114,54 +128,58 @@ fun IndexesScreen(
                 }
             }
 
-            items(uiState.indexes) { idx ->
+            itemsIndexed(uiState.indexes) { i, idx ->
                 val isDefaultIdIndex = idx.name == "_id_"
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(SquircleMedium)
-                        .background(SurfaceContainer)
-                        .border(1.dp, CardBorderDark, SquircleMedium)
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(SkyAccent.copy(alpha = 0.16f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Key, contentDescription = null, tint = SkyAccent, modifier = Modifier.size(18.dp))
+                StaggerEntrance(index = i) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(SquircleMedium)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, SquircleMedium)
+                            .padding(16.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(34.dp)
+                                            .clip(CircleShape)
+                                            .background(SkyAccent.copy(alpha = 0.16f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Key, contentDescription = null, tint = SkyAccent, modifier = Modifier.size(18.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = idx.name,
+                                        style = MaterialTheme.typography.titleMediumEmphasized,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = idx.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                            }
 
-                            if (!isDefaultIdIndex) {
-                                IconButton(
-                                    onClick = { indexToDrop = idx },
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(SurfaceContainerHigh)
-                                ) {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Index", tint = RoseAccent, modifier = Modifier.size(16.dp))
+                                if (!isDefaultIdIndex) {
+                                    IconButton(
+                                        onClick = {
+                                            haptic.performConfirmFeedback()
+                                            indexToDrop = idx
+                                        },
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(SurfaceContainerHigh)
+                                    ) {
+                                        Icon(Icons.Default.DeleteOutline, contentDescription = "Drop Index", tint = RoseAccent, modifier = Modifier.size(16.dp))
+                                    }
                                 }
                             }
-                        }
 
                         Spacer(modifier = Modifier.height(10.dp))
 

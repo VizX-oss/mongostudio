@@ -176,48 +176,52 @@ fun DashboardScreen(
 
             // Metric Cards Grid
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = "Storage Size",
-                        value = FormatUtils.formatBytes(overview?.totalSize ?: 0L),
-                        icon = Icons.Default.Storage,
-                        modifier = Modifier.weight(1f),
-                        accentColor = EmeraldPrimary
-                    )
-                    MetricCard(
-                        title = "Databases",
-                        value = "${allDatabases.size}",
-                        icon = Icons.Default.Folder,
-                        modifier = Modifier.weight(1f),
-                        accentColor = SkyAccent
-                    )
+                StaggerEntrance(index = 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MetricCard(
+                            title = "Storage Size",
+                            value = FormatUtils.formatBytes(overview?.totalSize ?: 0L),
+                            icon = Icons.Default.Storage,
+                            modifier = Modifier.weight(1f),
+                            accentColor = EmeraldPrimary
+                        )
+                        MetricCard(
+                            title = "Databases",
+                            value = "${allDatabases.size}",
+                            icon = Icons.Default.Folder,
+                            modifier = Modifier.weight(1f),
+                            accentColor = SkyAccent
+                        )
+                    }
                 }
             }
 
             item {
                 val totalCollections = allDatabases.sumOf { it.collectionsCount }
                 val uptimeStr = FormatUtils.formatUptime(overview?.serverStatus?.uptime)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MetricCard(
-                        title = "Collections",
-                        value = "$totalCollections",
-                        icon = Icons.Default.Dataset,
-                        modifier = Modifier.weight(1f),
-                        accentColor = AmberAccent
-                    )
-                    MetricCard(
-                        title = "Uptime",
-                        value = uptimeStr,
-                        icon = Icons.Default.Schedule,
-                        modifier = Modifier.weight(1f),
-                        accentColor = PurpleAccent
-                    )
+                StaggerEntrance(index = 1) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        MetricCard(
+                            title = "Collections",
+                            value = "$totalCollections",
+                            icon = Icons.Default.Dataset,
+                            modifier = Modifier.weight(1f),
+                            accentColor = AmberAccent
+                        )
+                        MetricCard(
+                            title = "Uptime",
+                            value = uptimeStr,
+                            icon = Icons.Default.Schedule,
+                            modifier = Modifier.weight(1f),
+                            accentColor = PurpleAccent
+                        )
+                    }
                 }
             }
 
@@ -226,138 +230,142 @@ fun DashboardScreen(
                 val userCount = allDatabases.count { !it.isSystemDb }
                 val sysCount = allDatabases.count { it.isSystemDb }
 
-                ConnectedButtonGroup(
-                    items = listOf(
-                        ButtonGroupItem(id = "all", label = "All", count = allDatabases.size),
-                        ButtonGroupItem(id = "user", label = "User DBs", count = userCount),
-                        ButtonGroupItem(id = "system", label = "System", count = sysCount)
-                    ),
-                    selectedId = selectedFilter,
-                    onItemSelected = { selectedFilter = it },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                StaggerEntrance(index = 2) {
+                    ConnectedButtonGroup(
+                        items = listOf(
+                            ButtonGroupItem(id = "all", label = "All", count = allDatabases.size),
+                            ButtonGroupItem(id = "user", label = "User DBs", count = userCount),
+                            ButtonGroupItem(id = "system", label = "System", count = sysCount)
+                        ),
+                        selectedId = selectedFilter,
+                        onItemSelected = { selectedFilter = it },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
             // Database Items
-            items(filteredDatabases) { db ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(AsymmetricCardShape)
-                        .background(SurfaceContainer)
-                        .border(1.dp, CardBorderDark, AsymmetricCardShape)
-                        .clickable { onNavigateToDatabase(db.name) }
-                        .padding(18.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (db.isSystemDb) SurfaceContainerHighest
-                                            else EmeraldContainer
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.FolderOpen,
-                                        contentDescription = null,
-                                        tint = if (db.isSystemDb) TextMuted else EmeraldLight,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = db.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                    if (db.isSystemDb) {
-                                        Text(
-                                            text = "System Catalog",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = TextMuted,
-                                            fontSize = 10.sp
+            itemsIndexed(filteredDatabases, key = { _, db -> db.name }) { idx, db ->
+                StaggerEntrance(index = idx + 3) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(AsymmetricCardShape)
+                            .background(SurfaceContainer)
+                            .border(1.dp, CardBorderDark, AsymmetricCardShape)
+                            .pressMorph(onClick = { onNavigateToDatabase(db.name) })
+                            .padding(18.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (db.isSystemDb) SurfaceContainerHighest
+                                                else EmeraldContainer
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FolderOpen,
+                                            contentDescription = null,
+                                            tint = if (db.isSystemDb) TextMuted else EmeraldLight,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = db.name,
+                                            style = MaterialTheme.typography.titleMediumEmphasized,
+                                            color = TextPrimary
+                                        )
+                                        if (db.isSystemDb) {
+                                            Text(
+                                                text = "System Catalog",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = TextMuted,
+                                                fontSize = 10.sp
+                                            )
+                                        }
+                                    }
                                 }
-                            }
 
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                if (!db.isSystemDb) {
-                                    IconButton(
-                                        onClick = { dbToDrop = db },
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    if (!db.isSystemDb) {
+                                        IconButton(
+                                            onClick = { dbToDrop = db },
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .clip(CircleShape)
+                                                .background(SurfaceContainerHigh)
+                                                .pressMorph()
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DeleteOutline,
+                                                contentDescription = "Drop DB",
+                                                tint = RoseAccent,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                    Box(
                                         modifier = Modifier
                                             .size(34.dp)
                                             .clip(CircleShape)
-                                            .background(SurfaceContainerHigh)
+                                            .background(SurfaceContainerHigh),
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            Icons.Default.DeleteOutline,
-                                            contentDescription = "Drop DB",
-                                            tint = RoseAccent,
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = "Open",
+                                            tint = EmeraldLight,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(SurfaceContainerHigh),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = "Open",
-                                        tint = EmeraldLight,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ExpressiveTag(
-                                text = "${db.collectionsCount} collections",
-                                icon = Icons.Default.Layers,
-                                containerColor = SurfaceContainerHigh,
-                                contentColor = TextSecondary
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                ExpressiveTag(
+                                    text = "${db.collectionsCount} collections",
+                                    icon = Icons.Default.Layers,
+                                    containerColor = SurfaceContainerHigh,
+                                    contentColor = TextSecondary
+                                )
 
-                            ExpressiveTag(
-                                text = "${db.objectsCount} docs",
-                                icon = Icons.Default.Description,
-                                containerColor = SurfaceContainerHigh,
-                                contentColor = TextSecondary
-                            )
+                                ExpressiveTag(
+                                    text = "${db.objectsCount} docs",
+                                    icon = Icons.Default.Description,
+                                    containerColor = SurfaceContainerHigh,
+                                    contentColor = TextSecondary
+                                )
 
-                            Spacer(modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.weight(1f))
 
-                            Text(
-                                text = FormatUtils.formatBytes(db.sizeOnDisk),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = EmeraldLight
-                            )
+                                Text(
+                                    text = FormatUtils.formatBytes(db.sizeOnDisk),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = EmeraldLight
+                                )
+                            }
                         }
                     }
                 }

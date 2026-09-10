@@ -59,12 +59,14 @@ fun ExpressiveFloatingToolbar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+
             actions.forEach { action ->
                 val interaction = remember { MutableInteractionSource() }
                 val isPressed by interaction.collectIsPressedAsState()
                 val scale by animateFloatAsState(
                     targetValue = if (isPressed) 0.88f else 1.0f,
-                    animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                     label = "toolbar_icon_scale"
                 )
 
@@ -76,7 +78,10 @@ fun ExpressiveFloatingToolbar(
                         .clickable(
                             interactionSource = interaction,
                             indication = ripple(bounded = true, color = action.tint),
-                            onClick = action.onClick
+                            onClick = {
+                                haptics.performClickFeedback()
+                                action.onClick()
+                            }
                         ),
                     contentAlignment = Alignment.Center
                 ) {

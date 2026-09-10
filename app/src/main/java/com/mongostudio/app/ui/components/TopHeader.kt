@@ -34,6 +34,8 @@ fun TopHeader(
     onSettingsClick: (() -> Unit)? = null,
     onDisconnectClick: (() -> Unit)? = null
 ) {
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     Surface(
         color = SurfaceDark,
         tonalElevation = 2.dp,
@@ -56,11 +58,15 @@ fun TopHeader(
                 ) {
                     if (onBackClick != null) {
                         IconButton(
-                            onClick = onBackClick,
+                            onClick = {
+                                haptics.performClickFeedback()
+                                onBackClick()
+                            },
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(SurfaceContainerHigh)
+                                .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -75,8 +81,7 @@ fun TopHeader(
                     Column {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLargeEmphasized,
                             color = TextPrimary,
                             letterSpacing = (-0.3).sp
                         )
@@ -110,11 +115,15 @@ fun TopHeader(
 
                     if (onRefreshClick != null) {
                         IconButton(
-                            onClick = onRefreshClick,
+                            onClick = {
+                                haptics.performClickFeedback()
+                                onRefreshClick()
+                            },
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
                                 .background(SurfaceContainerHigh)
+                                .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -127,11 +136,15 @@ fun TopHeader(
 
                     if (isConnectedToCluster && onConsoleClick != null) {
                         IconButton(
-                            onClick = onConsoleClick,
+                            onClick = {
+                                haptics.performClickFeedback()
+                                onConsoleClick()
+                            },
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
                                 .background(EmeraldContainer)
+                                .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Terminal,
@@ -144,11 +157,15 @@ fun TopHeader(
 
                     if (onSettingsClick != null) {
                         IconButton(
-                            onClick = onSettingsClick,
+                            onClick = {
+                                haptics.performClickFeedback()
+                                onSettingsClick()
+                            },
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
                                 .background(SurfaceContainerHigh)
+                                .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
@@ -161,11 +178,15 @@ fun TopHeader(
 
                     if (isConnectedToCluster && onDisconnectClick != null) {
                         IconButton(
-                            onClick = onDisconnectClick,
+                            onClick = {
+                                haptics.performConfirmFeedback()
+                                onDisconnectClick()
+                            },
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
                                 .background(RoseAccent.copy(alpha = 0.15f))
+                                .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PowerSettingsNew,

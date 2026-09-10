@@ -33,6 +33,7 @@ fun ConnectionScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     var uriText by remember { mutableStateOf("mongodb://10.0.2.2:27017") }
     var clusterName by remember { mutableStateOf("Local MongoDB") }
@@ -110,8 +111,7 @@ fun ConnectionScreen(
 
                         Text(
                             text = "Direct MongoDB Engine",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.headlineSmallEmphasized,
                             color = TextPrimary,
                             letterSpacing = (-0.5).sp
                         )
@@ -179,8 +179,7 @@ fun ConnectionScreen(
                     Column {
                         Text(
                             text = "Connection Details",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMediumEmphasized,
                             color = TextPrimary
                         )
 
@@ -203,10 +202,11 @@ fun ConnectionScreen(
                                 modifier = Modifier
                                     .clip(PillShape)
                                     .background(SurfaceContainerHigh)
-                                    .clickable {
+                                    .pressMorph(onClick = {
+                                        haptics.performClickFeedback()
                                         uriText = "mongodb://10.0.2.2:27017"
                                         clusterName = "Android Emulator DB"
-                                    }
+                                    })
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text("Emulator (10.0.2.2)", style = MaterialTheme.typography.labelSmall, color = TextPrimary)
@@ -216,10 +216,11 @@ fun ConnectionScreen(
                                 modifier = Modifier
                                     .clip(PillShape)
                                     .background(SurfaceContainerHigh)
-                                    .clickable {
+                                    .pressMorph(onClick = {
+                                        haptics.performClickFeedback()
                                         uriText = "mongodb+srv://user:password@cluster0.mongodb.net/?appName=MongoStudio"
                                         clusterName = "Atlas Cloud"
-                                    }
+                                    })
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text("Atlas SRV", style = MaterialTheme.typography.labelSmall, color = CyanAccent)
@@ -229,10 +230,11 @@ fun ConnectionScreen(
                                 modifier = Modifier
                                     .clip(PillShape)
                                     .background(SurfaceContainerHigh)
-                                    .clickable {
+                                    .pressMorph(onClick = {
+                                        haptics.performClickFeedback()
                                         uriText = "mongodb://localhost:27017"
                                         clusterName = "Localhost"
-                                    }
+                                    })
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text("Localhost", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
@@ -430,58 +432,67 @@ fun ConnectionScreen(
                     }
                 }
             } else {
-                items(uiState.savedConnections) { saved ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(SquircleMedium)
-                            .background(SurfaceContainer)
-                            .border(1.dp, CardBorderDark, SquircleMedium)
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                itemsIndexed(uiState.savedConnections, key = { _, item -> item.id }) { index, saved ->
+                    StaggerEntrance(index = index) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleMedium)
+                                .background(SurfaceContainer)
+                                .border(1.dp, CardBorderDark, SquircleMedium)
+                                .padding(16.dp)
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = saved.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Text(
-                                    text = saved.maskedUri,
-                                    style = MonospaceCodeStyle.copy(fontSize = 11.sp),
-                                    color = TextSecondary
-                                )
-                            }
-
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                IconButton(
-                                    onClick = { itemToDelete = saved },
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(SurfaceContainerHigh)
-                                ) {
-                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = RoseAccent, modifier = Modifier.size(18.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = saved.name,
+                                        style = MaterialTheme.typography.titleMediumEmphasized,
+                                        color = TextPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Text(
+                                        text = saved.maskedUri,
+                                        style = MonospaceCodeStyle.copy(fontSize = 11.sp),
+                                        color = TextSecondary
+                                    )
                                 }
 
-                                Button(
-                                    onClick = { viewModel.connectSaved(saved) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                                    shape = PillShape
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Connect", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    IconButton(
+                                        onClick = {
+                                            haptics.performConfirmFeedback()
+                                            itemToDelete = saved
+                                        },
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(SurfaceContainerHigh)
+                                            .pressMorph()
+                                    ) {
+                                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = RoseAccent, modifier = Modifier.size(18.dp))
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            haptics.performClickFeedback()
+                                            viewModel.connectSaved(saved)
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                        shape = PillShape,
+                                        modifier = Modifier.pressMorph()
+                                    ) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Connect", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,11 +26,13 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ConsoleScreen(
     viewModel: MongoStudioViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     var dbName by remember { mutableStateOf(uiState.selectedDatabase ?: "admin") }
     var commandText by remember { mutableStateOf("""{ "ping": 1 }""") }
@@ -72,7 +75,10 @@ fun ConsoleScreen(
                             modifier = Modifier
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
-                                .clickable { commandText = """{ "ping": 1 }""" }
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
+                                    commandText = """{ "ping": 1 }"""
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("ping", style = MonospaceCodeStyle.copy(fontSize = 11.sp), color = EmeraldLight)
@@ -82,7 +88,10 @@ fun ConsoleScreen(
                             modifier = Modifier
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
-                                .clickable { commandText = """{ "buildInfo": 1 }""" }
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
+                                    commandText = """{ "buildInfo": 1 }"""
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("buildInfo", style = MonospaceCodeStyle.copy(fontSize = 11.sp), color = CyanAccent)
@@ -92,7 +101,10 @@ fun ConsoleScreen(
                             modifier = Modifier
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
-                                .clickable { commandText = """{ "serverStatus": 1 }""" }
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
+                                    commandText = """{ "serverStatus": 1 }"""
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("serverStatus", style = MonospaceCodeStyle.copy(fontSize = 11.sp), color = AmberAccent)
@@ -102,7 +114,10 @@ fun ConsoleScreen(
                             modifier = Modifier
                                 .clip(PillShape)
                                 .background(SurfaceContainerHigh)
-                                .clickable { commandText = """{ "dbStats": 1 }""" }
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
+                                    commandText = """{ "dbStats": 1 }"""
+                                })
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text("dbStats", style = MonospaceCodeStyle.copy(fontSize = 11.sp), color = PurpleAccent)
@@ -138,7 +153,7 @@ fun ConsoleScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = "Database Command Runner",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleMediumEmphasized,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
                             )
@@ -195,9 +210,14 @@ fun ConsoleScreen(
                         }
 
                         Button(
-                            onClick = { viewModel.executeRawCommand(dbName, commandText) },
+                            onClick = {
+                                haptic.performClickFeedback()
+                                viewModel.executeRawCommand(dbName, commandText)
+                            },
                             enabled = !uiState.isLoading,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .pressMorph(),
                             colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
                             shape = PillShape
                         ) {
@@ -239,7 +259,7 @@ fun ConsoleScreen(
                     ) {
                         Text(
                             text = "Server Output",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleMediumEmphasized,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )

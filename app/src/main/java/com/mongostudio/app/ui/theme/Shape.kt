@@ -5,18 +5,18 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 val ExpressiveShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(14.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(26.dp),
     extraLarge = RoundedCornerShape(36.dp)
 )
 
-// Playful Material 3 Expressive Shape Tokens
+// Playful Material 3 Expressive Shape Tokens (§4.4)
 val PillShape = RoundedCornerShape(percent = 50)
-val SquircleLarge = RoundedCornerShape(28.dp)
-val SquircleMedium = RoundedCornerShape(20.dp)
-val SquircleSmall = RoundedCornerShape(14.dp)
+val SquircleLarge = RoundedCornerShape(26.dp)
+val SquircleMedium = RoundedCornerShape(18.dp)
+val SquircleSmall = RoundedCornerShape(8.dp)
 
 // Playful Asymmetrical Shape (Signature MD3 Expressive)
 val AsymmetricCardShape = RoundedCornerShape(
@@ -29,11 +29,11 @@ val AsymmetricCardShape = RoundedCornerShape(
 val AsymmetricHeaderShape = RoundedCornerShape(
     topStart = 0.dp,
     topEnd = 0.dp,
-    bottomStart = 28.dp,
-    bottomEnd = 28.dp
+    bottomStart = 26.dp,
+    bottomEnd = 26.dp
 )
 
-// Split Button Shapes
+// Split Button Shapes (§7.5)
 val SplitButtonLeadingShape = RoundedCornerShape(
     topStart = 24.dp,
     bottomStart = 24.dp,
@@ -48,7 +48,7 @@ val SplitButtonTrailingShape = RoundedCornerShape(
     bottomEnd = 24.dp
 )
 
-// Connected Button Group Shapes
+// Connected Button Group Shapes (§7.2)
 val ConnectedGroupStartShape = RoundedCornerShape(
     topStart = 20.dp,
     bottomStart = 20.dp,

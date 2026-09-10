@@ -60,20 +60,23 @@ fun ConnectedButtonGroup(
                 else -> ConnectedGroupCenterShape
             }
 
+            val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+
             val bgColor by animateColorAsState(
                 targetValue = if (isSelected) activeColor else Color.Transparent,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
+                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                 label = "btn_group_bg"
             )
 
             val textColor by animateColorAsState(
                 targetValue = if (isSelected) activeContentColor else TextSecondary,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
+                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                 label = "btn_group_text"
             )
 
             val scale by animateFloatAsState(
                 targetValue = if (isSelected) 1.0f else 0.98f,
+                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                 label = "btn_group_scale"
             )
 
@@ -88,7 +91,10 @@ fun ConnectedButtonGroup(
                     .clickable(
                         interactionSource = interaction,
                         indication = ripple(color = textColor),
-                        onClick = { onItemSelected(item.id) }
+                        onClick = {
+                            haptics.performClickFeedback()
+                            onItemSelected(item.id)
+                        }
                     )
                     .padding(vertical = 10.dp, horizontal = 12.dp),
                 contentAlignment = Alignment.Center

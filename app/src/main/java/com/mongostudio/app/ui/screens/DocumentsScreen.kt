@@ -12,7 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +32,7 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DocumentsScreen(
     dbName: String,
@@ -39,6 +41,7 @@ fun DocumentsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     val prettyGson = remember { GsonBuilder().setPrettyPrinting().serializeNulls().create() }
 
@@ -78,6 +81,7 @@ fun DocumentsScreen(
                         icon = Icons.Default.ChevronLeft,
                         contentDescription = "Previous Page",
                         onClick = {
+                            haptic.performClickFeedback()
                             if ((queryResult?.page ?: 1) > 1) {
                                 viewModel.runQuery(page = (queryResult?.page ?: 1) - 1)
                             }
@@ -88,6 +92,7 @@ fun DocumentsScreen(
                         icon = Icons.Default.ChevronRight,
                         contentDescription = "Next Page",
                         onClick = {
+                            haptic.performClickFeedback()
                             if ((queryResult?.page ?: 1) < (queryResult?.totalPages ?: 1)) {
                                 viewModel.runQuery(page = (queryResult?.page ?: 1) + 1)
                             }
@@ -96,11 +101,16 @@ fun DocumentsScreen(
                 ),
                 floatingActionButton = {
                     FloatingActionButton(
-                        onClick = { isAddingDocument = true },
+                        onClick = {
+                            haptic.performClickFeedback()
+                            isAddingDocument = true
+                        },
                         containerColor = EmeraldPrimary,
                         contentColor = TextOnPrimary,
                         shape = PillShape,
-                        modifier = Modifier.height(44.dp)
+                        modifier = Modifier
+                            .height(44.dp)
+                            .pressMorph()
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp),
@@ -153,7 +163,7 @@ fun DocumentsScreen(
                                 Column {
                                     Text(
                                         text = "Query Engine",
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = MaterialTheme.typography.titleMediumEmphasized,
                                         fontWeight = FontWeight.Bold,
                                         color = TextPrimary
                                     )
@@ -167,7 +177,10 @@ fun DocumentsScreen(
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
-                                    onClick = { isFilterExpanded = !isFilterExpanded },
+                                    onClick = {
+                                        haptic.performClickFeedback()
+                                        isFilterExpanded = !isFilterExpanded
+                                    },
                                     modifier = Modifier
                                         .size(34.dp)
                                         .clip(CircleShape)
@@ -196,7 +209,10 @@ fun DocumentsScreen(
                                         modifier = Modifier
                                             .clip(PillShape)
                                             .background(SurfaceContainerHigh)
-                                            .clickable { filterText = "{}" }
+                                            .pressMorph(onClick = {
+                                                haptic.performClickFeedback()
+                                                filterText = "{}"
+                                            })
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text("{}", style = MonospaceCodeStyle.copy(fontSize = 11.sp), color = TextPrimary)
@@ -205,7 +221,10 @@ fun DocumentsScreen(
                                         modifier = Modifier
                                             .clip(PillShape)
                                             .background(SurfaceContainerHigh)
-                                            .clickable { filterText = """{"status": "active"}""" }
+                                            .pressMorph(onClick = {
+                                                haptic.performClickFeedback()
+                                                filterText = """{"status": "active"}"""
+                                            })
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text("status: active", style = MaterialTheme.typography.labelSmall, color = EmeraldLight)
@@ -214,7 +233,10 @@ fun DocumentsScreen(
                                         modifier = Modifier
                                             .clip(PillShape)
                                             .background(SurfaceContainerHigh)
-                                            .clickable { sortText = """{"_id": -1}""" }
+                                            .pressMorph(onClick = {
+                                                haptic.performClickFeedback()
+                                                sortText = """{"_id": -1}"""
+                                            })
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text("latest first", style = MaterialTheme.typography.labelSmall, color = CyanAccent)
@@ -291,6 +313,7 @@ fun DocumentsScreen(
                                 ) {
                                     TextButton(
                                         onClick = {
+                                            haptic.performClickFeedback()
                                             filterText = ""
                                             sortText = ""
                                             projectionText = ""
@@ -305,11 +328,13 @@ fun DocumentsScreen(
 
                                     Button(
                                         onClick = {
+                                            haptic.performClickFeedback()
                                             viewModel.updateQueryParams(filterText, sortText, projectionText)
                                             viewModel.runQuery(page = 1)
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
-                                        shape = PillShape
+                                        shape = PillShape,
+                                        modifier = Modifier.pressMorph()
                                     ) {
                                         Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -331,7 +356,7 @@ fun DocumentsScreen(
                 ) {
                     Text(
                         text = "Results (${queryResult?.documents?.size ?: 0} of ${queryResult?.total ?: 0})",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
@@ -375,9 +400,13 @@ fun DocumentsScreen(
                             Text("No documents matched filter", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(
-                                onClick = { isAddingDocument = true },
+                                onClick = {
+                                    haptic.performClickFeedback()
+                                    isAddingDocument = true
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
-                                shape = PillShape
+                                shape = PillShape,
+                                modifier = Modifier.pressMorph()
                             ) {
                                 Text("Insert Document", fontWeight = FontWeight.Bold)
                             }
@@ -385,75 +414,81 @@ fun DocumentsScreen(
                     }
                 }
             } else {
-                items(queryResult?.documents ?: emptyList()) { doc ->
+                itemsIndexed(queryResult?.documents ?: emptyList()) { idx, doc ->
                     val docId = doc["_id"]?.toString() ?: ""
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(SquircleMedium)
-                            .background(SurfaceContainer)
-                            .border(1.dp, CardBorderDark, SquircleMedium)
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                ExpressiveTag(
-                                    text = "_id: $docId",
-                                    containerColor = EmeraldContainer,
-                                    contentColor = EmeraldLight
-                                )
-
+                    StaggerEntrance(index = idx) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(SquircleMedium)
+                                .background(SurfaceContainer)
+                                .border(1.dp, CardBorderDark, SquircleMedium)
+                                .padding(16.dp)
+                        ) {
+                            Column {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(
-                                        onClick = {
-                                            editingDocId = docId
-                                            editingDocJson = prettyGson.toJson(doc)
-                                        },
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(CircleShape)
-                                            .background(SurfaceContainerHigh)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Edit,
-                                            contentDescription = "Edit Document",
-                                            tint = SkyAccent,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
+                                    ExpressiveTag(
+                                        text = "_id: $docId",
+                                        containerColor = EmeraldContainer,
+                                        contentColor = EmeraldLight
+                                    )
 
-                                    IconButton(
-                                        onClick = { docToDeleteId = docId },
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(CircleShape)
-                                            .background(SurfaceContainerHigh)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        Icon(
-                                            Icons.Default.DeleteOutline,
-                                            contentDescription = "Delete Document",
-                                            tint = RoseAccent,
-                                            modifier = Modifier.size(16.dp)
-                                        )
+                                        IconButton(
+                                            onClick = {
+                                                haptic.performClickFeedback()
+                                                editingDocId = docId
+                                                editingDocJson = prettyGson.toJson(doc)
+                                            },
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(SurfaceContainerHigh)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit Document",
+                                                tint = SkyAccent,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                haptic.performConfirmFeedback()
+                                                docToDeleteId = docId
+                                            },
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(SurfaceContainerHigh)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DeleteOutline,
+                                                contentDescription = "Delete Document",
+                                                tint = RoseAccent,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                JsonViewerCard(
+                                    data = doc,
+                                    maxCollapsedLines = 8,
+                                    canCopy = true
+                                )
                             }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            JsonViewerCard(
-                                data = doc,
-                                maxCollapsedLines = 8,
-                                canCopy = true
-                            )
                         }
                     }
                 }
