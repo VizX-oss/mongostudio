@@ -43,6 +43,62 @@ object DirectMongoService {
     val isConnected: Boolean
         get() = activeClient != null
 
+    suspend fun pingOnly(rawUri: String): Result<StandaloneConnectionInfo> = withContext(Dispatchers.IO) {
+        var tempClient: MongoClient? = null
+        try {
+            val effectiveUri = MongoDnsResolver.resolveUri(rawUri)
+            val connectionString = ConnectionString(effectiveUri)
+
+            val settings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                .applyToSocketSettings { builder ->
+                    builder.connectTimeout(10, TimeUnit.SECONDS)
+                    builder.readTimeout(15, TimeUnit.SECONDS)
+                }
+                .applyToClusterSettings { builder ->
+                    builder.serverSelectionTimeout(10, TimeUnit.SECONDS)
+                }
+                .build()
+
+            tempClient = MongoClients.create(settings)
+            val startTime = System.currentTimeMillis()
+            val dbNameCandidate = connectionString.database?.takeIf { it.isNotBlank() } ?: "admin"
+            val targetDb = try {
+                val db = tempClient.getDatabase(dbNameCandidate)
+                db.runCommand(Document("ping", 1))
+                db
+            } catch (e: Exception) {
+                val admin = tempClient.getDatabase("admin")
+                admin.runCommand(Document("ping", 1))
+                admin
+            }
+            val pingMs = System.currentTimeMillis() - startTime
+
+            val buildInfo = try {
+                targetDb.runCommand(Document("buildInfo", 1))
+            } catch (e: Exception) {
+                Document("version", "Atlas/MongoDB")
+            }
+            val serverVersion = buildInfo.getString("version") ?: "Atlas/MongoDB"
+
+            Result.success(
+                StandaloneConnectionInfo(
+                    serverVersion = serverVersion,
+                    pingMs = pingMs,
+                    effectiveUri = effectiveUri
+                )
+            )
+        } catch (e: Throwable) {
+            Result.failure(e)
+        } finally {
+            try {
+                tempClient?.close()
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
     suspend fun connect(rawUri: String): Result<StandaloneConnectionInfo> = withContext(Dispatchers.IO) {
         try {
             disconnect()
@@ -65,17 +121,29 @@ object DirectMongoService {
 
             // Test connection and measure ping
             val startTime = System.currentTimeMillis()
-            val adminDb = client.getDatabase("admin")
-            adminDb.runCommand(Document("ping", 1))
+            val dbNameCandidate = connectionString.database?.takeIf { it.isNotBlank() } ?: "admin"
+            val targetDb = try {
+                val db = client.getDatabase(dbNameCandidate)
+                db.runCommand(Document("ping", 1))
+                db
+            } catch (e: Exception) {
+                val admin = client.getDatabase("admin")
+                admin.runCommand(Document("ping", 1))
+                admin
+            }
             val pingMs = System.currentTimeMillis() - startTime
 
             // Query server version via buildInfo
             val buildInfo = try {
-                adminDb.runCommand(Document("buildInfo", 1))
+                targetDb.runCommand(Document("buildInfo", 1))
             } catch (e: Exception) {
-                Document("version", "Unknown")
+                try {
+                    client.getDatabase("admin").runCommand(Document("buildInfo", 1))
+                } catch (e2: Exception) {
+                    Document("version", "Atlas/MongoDB")
+                }
             }
-            val serverVersion = buildInfo.getString("version") ?: "Unknown"
+            val serverVersion = buildInfo.getString("version") ?: "Atlas/MongoDB"
 
             activeClient = client
             activeUri = rawUri
@@ -109,14 +177,28 @@ object DirectMongoService {
     suspend fun getOverview(): Result<ClusterOverview> = withContext(Dispatchers.IO) {
         val client = activeClient ?: return@withContext Result.failure(IllegalStateException("Not connected to MongoDB"))
         try {
-            val adminDb = client.getDatabase("admin")
-            val dbsResult = adminDb.runCommand(Document("listDatabases", 1))
-            val rawDbsList = dbsResult.getList("databases", Document::class.java) ?: emptyList()
-            val totalSize = (dbsResult["totalSize"] as? Number)?.toLong() ?: 0L
+            var rawDbsList: List<Document> = emptyList()
+            var totalSize = 0L
+
+            try {
+                val adminDb = client.getDatabase("admin")
+                val dbsResult = adminDb.runCommand(Document("listDatabases", 1))
+                rawDbsList = dbsResult.getList("databases", Document::class.java) ?: emptyList()
+                totalSize = (dbsResult["totalSize"] as? Number)?.toLong() ?: 0L
+            } catch (e: Exception) {
+                // When cluster user is restricted from admin listDatabases, fallback to listDatabaseNames or URI database
+                val names = try {
+                    client.listDatabaseNames().toList()
+                } catch (e2: Exception) {
+                    val uriDb = activeUri?.let { ConnectionString(it).database }
+                    if (!uriDb.isNullOrBlank()) listOf(uriDb) else listOf("default")
+                }
+                rawDbsList = names.map { Document("name", it).append("sizeOnDisk", 0L).append("empty", false) }
+            }
 
             var serverStatusDoc: Document? = null
             try {
-                serverStatusDoc = adminDb.runCommand(Document("serverStatus", 1))
+                serverStatusDoc = client.getDatabase("admin").runCommand(Document("serverStatus", 1))
             } catch (e: Exception) {
                 // non-admin credentials might not have serverStatus privilege
             }
@@ -474,22 +556,22 @@ object DirectMongoService {
     }
 
     private fun documentToMap(doc: Document): Map<String, Any?> {
-        val map = LinkedHashMap<String, Any?>()
-        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-
+        val map = mutableMapOf<String, Any?>()
         for ((k, v) in doc) {
-            map[k] = when (v) {
-                is ObjectId -> v.toHexString()
-                is Date -> isoFormat.format(v)
-                is Document -> documentToMap(v)
-                is List<*> -> v.map { item ->
-                    if (item is Document) documentToMap(item) else item
-                }
-                else -> v
-            }
+            map[k] = convertBsonValue(v)
         }
         return map
+    }
+
+    private fun convertBsonValue(v: Any?): Any? {
+        return when (v) {
+            is ObjectId -> v.toHexString()
+            is Date -> SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }.format(v)
+            is Document -> documentToMap(v)
+            is List<*> -> v.map { convertBsonValue(it) }
+            else -> v
+        }
     }
 }

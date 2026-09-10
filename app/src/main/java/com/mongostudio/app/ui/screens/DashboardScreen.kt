@@ -1,15 +1,10 @@
 package com.mongostudio.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -19,7 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +24,7 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: MongoStudioViewModel,
@@ -37,12 +33,14 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit,
     onDisconnect: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var newDbName by remember { mutableStateOf("") }
     var newColName by remember { mutableStateOf("") }
     var dbToDrop by remember { mutableStateOf<DatabaseInfo?>(null) }
     var selectedFilter by remember { mutableStateOf("all") }
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.loadOverview()
@@ -50,11 +48,15 @@ fun DashboardScreen(
 
     val overview = uiState.overview
     val allDatabases = overview?.databases ?: emptyList()
-    val filteredDatabases = remember(allDatabases, selectedFilter) {
-        when (selectedFilter) {
-            "user" -> allDatabases.filter { !it.isSystemDb }
-            "system" -> allDatabases.filter { it.isSystemDb }
-            else -> allDatabases
+    val filteredDatabases = remember(allDatabases, selectedFilter, searchQuery) {
+        allDatabases.filter { db ->
+            val matchesFilter = when (selectedFilter) {
+                "user" -> !db.isSystemDb
+                "system" -> db.isSystemDb
+                else -> true
+            }
+            val matchesSearch = searchQuery.isBlank() || db.name.contains(searchQuery, ignoreCase = true)
+            matchesFilter && matchesSearch
         }
     }
 
@@ -75,49 +77,59 @@ fun DashboardScreen(
             )
         },
         bottomBar = {
-            ExpressiveFloatingToolbar(
-                actions = listOf(
-                    ToolbarAction(
-                        id = "refresh",
-                        icon = Icons.Default.Refresh,
-                        contentDescription = "Refresh Overview",
-                        onClick = { viewModel.loadOverview() }
-                    ),
-                    ToolbarAction(
-                        id = "console",
-                        icon = Icons.Default.Terminal,
-                        contentDescription = "Open Console",
-                        tint = EmeraldLight,
-                        onClick = onNavigateToConsole
-                    ),
-                    ToolbarAction(
-                        id = "settings",
-                        icon = Icons.Default.Settings,
-                        contentDescription = "Settings",
-                        onClick = onNavigateToSettings
-                    )
-                ),
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = { showCreateDialog = true },
-                        containerColor = EmeraldPrimary,
-                        contentColor = TextOnPrimary,
-                        shape = PillShape,
-                        modifier = Modifier.height(44.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("New DB", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-                    }
-                }
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 3.dp
+            ) {
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {
+                        haptic.performClickFeedback()
+                        onDisconnect()
+                    },
+                    icon = { Icon(Icons.Default.VpnKey, contentDescription = "Sessions") },
+                    label = { Text("Sessions") }
+                )
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { },
+                    icon = { Icon(Icons.Default.Storage, contentDescription = "Databases") },
+                    label = { Text("Databases") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {
+                        haptic.performClickFeedback()
+                        onNavigateToConsole()
+                    },
+                    icon = { Icon(Icons.Default.Terminal, contentDescription = "Console") },
+                    label = { Text("Console") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {
+                        haptic.performClickFeedback()
+                        onNavigateToSettings()
+                    },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                    label = { Text("Settings") }
+                )
+            }
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    haptic.performClickFeedback()
+                    showCreateDialog = true
+                },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("New Database", fontWeight = FontWeight.Bold) },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         },
-        containerColor = BackgroundDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -126,329 +138,281 @@ fun DashboardScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Loading Wavy Progress
-            if (uiState.isLoading && overview == null) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+            // Cluster Metrics Grid
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        CircularWavySpinner(sizeDp = 48.dp, color = EmeraldLight)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Querying MongoDB wire protocol...",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = EmeraldLight
+                        MetricCard(
+                            title = "Total Size",
+                            value = FormatUtils.formatBytes(overview?.totalSize ?: 0L),
+                            icon = Icons.Default.Storage,
+                            accentColor = EmeraldPrimary,
+                            subValue = "${allDatabases.size} databases",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        MetricCard(
+                            title = "Collections",
+                            value = allDatabases.sumOf { it.collectionsCount }.toString(),
+                            icon = Icons.Default.Layers,
+                            accentColor = SkyAccent,
+                            subValue = "${allDatabases.sumOf { it.objectsCount }} total docs",
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        MetricCard(
+                            title = "Latency",
+                            value = "${uiState.activeClusterPingMs ?: 0} ms",
+                            icon = Icons.Default.Speed,
+                            accentColor = AmberAccent,
+                            subValue = "v${uiState.activeClusterVersion ?: "Unknown"}",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        MetricCard(
+                            title = "Status",
+                            value = if (uiState.isConnectedToCluster) "Online" else "Offline",
+                            icon = Icons.Default.CheckCircleOutline,
+                            accentColor = PurpleAccent,
+                            subValue = "Direct TLS Socket",
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
 
-            // Error banner
-            if (uiState.errorMessage != null) {
-                item {
-                    Surface(
-                        color = RoseContainer.copy(alpha = 0.35f),
-                        shape = SquircleMedium,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, RoseAccent.copy(alpha = 0.5f)),
+            // Search and Filter Bar
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Search databases...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (searchQuery.isNotBlank()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        FilterChip(
+                            selected = selectedFilter == "all",
+                            onClick = { selectedFilter = "all" },
+                            label = { Text("All (${allDatabases.size})") },
+                            shape = CircleShape
+                        )
+                        FilterChip(
+                            selected = selectedFilter == "user",
+                            onClick = { selectedFilter = "user" },
+                            label = { Text("User DBs (${allDatabases.count { !it.isSystemDb }})") },
+                            shape = CircleShape
+                        )
+                        FilterChip(
+                            selected = selectedFilter == "system",
+                            onClick = { selectedFilter = "system" },
+                            label = { Text("System (${allDatabases.count { it.isSystemDb }})") },
+                            shape = CircleShape
+                        )
+                    }
+                }
+            }
+
+            // Loading Indicator
+            if (uiState.isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+
+            // Databases List
+            if (!uiState.isLoading && filteredDatabases.isEmpty()) {
+                item {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(36.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = RoseAccent)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = uiState.errorMessage!!,
-                                color = RoseAccent,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = RoseAccent, modifier = Modifier.size(16.dp))
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.FolderOpen,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(44.dp)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "No databases match query",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
                         }
                     }
                 }
-            }
-
-            // Metric Cards Grid
-            item {
-                StaggerEntrance(index = 0) {
-                    Row(
+            } else {
+                items(filteredDatabases, key = { it.name }) { db ->
+                    ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
                     ) {
-                        MetricCard(
-                            title = "Storage Size",
-                            value = FormatUtils.formatBytes(overview?.totalSize ?: 0L),
-                            icon = Icons.Default.Storage,
-                            modifier = Modifier.weight(1f),
-                            accentColor = EmeraldPrimary
-                        )
-                        MetricCard(
-                            title = "Databases",
-                            value = "${allDatabases.size}",
-                            icon = Icons.Default.Folder,
-                            modifier = Modifier.weight(1f),
-                            accentColor = SkyAccent
-                        )
-                    }
-                }
-            }
-
-            item {
-                val totalCollections = allDatabases.sumOf { it.collectionsCount }
-                val uptimeStr = FormatUtils.formatUptime(overview?.serverStatus?.uptime)
-                StaggerEntrance(index = 1) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        MetricCard(
-                            title = "Collections",
-                            value = "$totalCollections",
-                            icon = Icons.Default.Dataset,
-                            modifier = Modifier.weight(1f),
-                            accentColor = AmberAccent
-                        )
-                        MetricCard(
-                            title = "Uptime",
-                            value = uptimeStr,
-                            icon = Icons.Default.Schedule,
-                            modifier = Modifier.weight(1f),
-                            accentColor = PurpleAccent
-                        )
-                    }
-                }
-            }
-
-            // Database Filter Connected Button Group
-            item {
-                val userCount = allDatabases.count { !it.isSystemDb }
-                val sysCount = allDatabases.count { it.isSystemDb }
-
-                StaggerEntrance(index = 2) {
-                    ConnectedButtonGroup(
-                        items = listOf(
-                            ButtonGroupItem(id = "all", label = "All", count = allDatabases.size),
-                            ButtonGroupItem(id = "user", label = "User DBs", count = userCount),
-                            ButtonGroupItem(id = "system", label = "System", count = sysCount)
-                        ),
-                        selectedId = selectedFilter,
-                        onItemSelected = { selectedFilter = it },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            // Database Items
-            itemsIndexed(filteredDatabases, key = { _, db -> db.name }) { idx, db ->
-                StaggerEntrance(index = idx + 3) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(AsymmetricCardShape)
-                            .background(SurfaceContainer)
-                            .border(1.dp, CardBorderDark, AsymmetricCardShape)
-                            .pressMorph(onClick = { onNavigateToDatabase(db.name) })
-                            .padding(18.dp)
-                    ) {
-                        Column {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
-                                            .background(
-                                                if (db.isSystemDb) SurfaceContainerHighest
-                                                else EmeraldContainer
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (db.isSystemDb) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(40.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.FolderOpen,
-                                            contentDescription = null,
-                                            tint = if (db.isSystemDb) TextMuted else EmeraldLight,
-                                            modifier = Modifier.size(20.dp)
-                                        )
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = if (db.isSystemDb) Icons.Default.Lock else Icons.Default.Folder,
+                                                contentDescription = null,
+                                                tint = if (db.isSystemDb) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
                                     }
+
                                     Spacer(modifier = Modifier.width(12.dp))
+
                                     Column {
                                         Text(
                                             text = db.name,
-                                            style = MaterialTheme.typography.titleMediumEmphasized,
-                                            color = TextPrimary
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
-                                        if (db.isSystemDb) {
-                                            Text(
-                                                text = "System Catalog",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = TextMuted,
-                                                fontSize = 10.sp
-                                            )
-                                        }
+                                        Text(
+                                            text = "${db.collectionsCount} collections • ${FormatUtils.formatBytes(db.sizeOnDisk)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
 
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     if (!db.isSystemDb) {
                                         IconButton(
-                                            onClick = { dbToDrop = db },
-                                            modifier = Modifier
-                                                .size(34.dp)
-                                                .clip(CircleShape)
-                                                .background(SurfaceContainerHigh)
-                                                .pressMorph()
+                                            onClick = {
+                                                haptic.performClickFeedback()
+                                                dbToDrop = db
+                                            }
                                         ) {
                                             Icon(
                                                 Icons.Default.DeleteOutline,
-                                                contentDescription = "Drop DB",
-                                                tint = RoseAccent,
-                                                modifier = Modifier.size(16.dp)
+                                                contentDescription = "Drop database",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .clip(CircleShape)
-                                            .background(SurfaceContainerHigh),
-                                        contentAlignment = Alignment.Center
+
+                                    FilledTonalButton(
+                                        onClick = {
+                                            haptic.performClickFeedback()
+                                            onNavigateToDatabase(db.name)
+                                        },
+                                        shape = CircleShape,
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                     ) {
+                                        Text("Explore", fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                            contentDescription = "Open",
-                                            tint = EmeraldLight,
+                                            Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = null,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                ExpressiveTag(
-                                    text = "${db.collectionsCount} collections",
-                                    icon = Icons.Default.Layers,
-                                    containerColor = SurfaceContainerHigh,
-                                    contentColor = TextSecondary
-                                )
-
-                                ExpressiveTag(
-                                    text = "${db.objectsCount} docs",
-                                    icon = Icons.Default.Description,
-                                    containerColor = SurfaceContainerHigh,
-                                    contentColor = TextSecondary
-                                )
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                Text(
-                                    text = FormatUtils.formatBytes(db.sizeOnDisk),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = EmeraldLight
-                                )
-                            }
                         }
                     }
                 }
             }
 
+            // Spacing for FAB
             item {
-                Spacer(modifier = Modifier.height(60.dp))
+                Spacer(modifier = Modifier.height(72.dp))
             }
         }
     }
 
-    // Drop DB Confirmation
-    dbToDrop?.let { db ->
+    // Drop Database Dialog
+    if (dbToDrop != null) {
+        val target = dbToDrop!!
         ConfirmDialog(
-            title = "Drop Database '${db.name}'?",
-            message = "Permanently drop database '${db.name}' and all containing collections? This action cannot be reversed.",
+            title = "Drop Database: ${target.name}",
+            message = "Are you sure you want to completely DROP '${target.name}'? This will delete all collections and documents permanently.",
             confirmText = "Drop Database",
+            dismissText = "Cancel",
             isDestructive = true,
             onConfirm = {
-                viewModel.dropDatabase(db.name)
+                viewModel.dropDatabase(target.name)
                 dbToDrop = null
             },
             onDismiss = { dbToDrop = null }
         )
     }
 
-    // Create DB / Collection Dialog
+    // Create Database Dialog
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            containerColor = SurfaceContainer,
-            shape = SquircleLarge,
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(EmeraldContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = EmeraldLight, modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Create New Database", fontWeight = FontWeight.Bold, color = TextPrimary)
-                }
-            },
+            title = { Text("Create New Database") },
             text = {
-                Column {
-                    Text("DATABASE NAME", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(6.dp))
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = newDbName,
                         onValueChange = { newDbName = it },
+                        label = { Text("Database Name") },
                         singleLine = true,
-                        placeholder = { Text("e.g. analytics_db", color = TextMuted) },
-                        shape = SquircleSmall,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceContainerHigh,
-                            unfocusedContainerColor = SurfaceContainerHigh,
-                            focusedBorderColor = EmeraldPrimary,
-                            unfocusedBorderColor = CardBorderDark
-                        ),
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text("INITIAL COLLECTION NAME", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
                         value = newColName,
                         onValueChange = { newColName = it },
+                        label = { Text("Initial Collection Name") },
                         singleLine = true,
-                        placeholder = { Text("e.g. events", color = TextMuted) },
-                        shape = SquircleSmall,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = SurfaceContainerHigh,
-                            unfocusedContainerColor = SurfaceContainerHigh,
-                            focusedBorderColor = EmeraldPrimary,
-                            unfocusedBorderColor = CardBorderDark
-                        ),
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -463,17 +427,17 @@ fun DashboardScreen(
                             newColName = ""
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary, contentColor = TextOnPrimary),
-                    shape = PillShape
+                    shape = CircleShape
                 ) {
-                    Text("Create", fontWeight = FontWeight.Bold)
+                    Text("Create")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text("Cancel")
                 }
-            }
+            },
+            shape = MaterialTheme.shapes.extraLarge
         )
     }
 }

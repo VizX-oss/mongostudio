@@ -1,30 +1,174 @@
 package com.mongostudio.app.ui.theme
 
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-// Expressive Dark Surface Hierarchy (Material 3 Expressive)
-val BackgroundDark = Color(0xFF090D15)
-val SurfaceDark = Color(0xFF0F1522)
-val SurfaceContainerLowest = Color(0xFF0A0E17)
-val SurfaceContainerLow = Color(0xFF121826)
-val SurfaceContainer = Color(0xFF182132)
-val SurfaceContainerHigh = Color(0xFF1F2B41)
-val SurfaceContainerHighest = Color(0xFF293752)
+// ============================================================================
+// Google Material 3 Expressive — Light Color Scheme
+// ============================================================================
+val M3LightPrimary = Color(0xFF006C4C)
+val M3LightOnPrimary = Color(0xFFFFFFFF)
+val M3LightPrimaryContainer = Color(0xFF8CF8C7)
+val M3LightOnPrimaryContainer = Color(0xFF002114)
+
+val M3LightSecondary = Color(0xFF4C6357)
+val M3LightOnSecondary = Color(0xFFFFFFFF)
+val M3LightSecondaryContainer = Color(0xFFCEE9D9)
+val M3LightOnSecondaryContainer = Color(0xFF092016)
+
+val M3LightTertiary = Color(0xFF3E6374)
+val M3LightOnTertiary = Color(0xFFFFFFFF)
+val M3LightTertiaryContainer = Color(0xFFC1E8FC)
+val M3LightOnTertiaryContainer = Color(0xFF001F2A)
+
+val M3LightError = Color(0xFFBA1A1A)
+val M3LightOnError = Color(0xFFFFFFFF)
+val M3LightErrorContainer = Color(0xFFFFDAD6)
+val M3LightOnErrorContainer = Color(0xFF410002)
+
+val M3LightBackground = Color(0xFFF5FBF5)
+val M3LightOnBackground = Color(0xFF171D1A)
+val M3LightSurface = Color(0xFFF5FBF5)
+val M3LightOnSurface = Color(0xFF171D1A)
+val M3LightSurfaceVariant = Color(0xFFDBE5DE)
+val M3LightOnSurfaceVariant = Color(0xFF404944)
+
+val M3LightOutline = Color(0xFF707974)
+val M3LightOutlineVariant = Color(0xFFBFC9C2)
+
+val M3LightSurfaceContainerLowest = Color(0xFFFFFFFF)
+val M3LightSurfaceContainerLow = Color(0xFFEFF5EF)
+val M3LightSurfaceContainer = Color(0xFFE9EFEA)
+val M3LightSurfaceContainerHigh = Color(0xFFE3EAE4)
+val M3LightSurfaceContainerHighest = Color(0xFFDEE4DE)
+
+// ============================================================================
+// Google Material 3 Expressive — Dark Color Scheme
+// ============================================================================
+val M3DarkPrimary = Color(0xFF6FDBAC)
+val M3DarkOnPrimary = Color(0xFF003825)
+val M3DarkPrimaryContainer = Color(0xFF005138)
+val M3DarkOnPrimaryContainer = Color(0xFF8CF8C7)
+
+val M3DarkSecondary = Color(0xFFB3CCBD)
+val M3DarkOnSecondary = Color(0xFF1F352A)
+val M3DarkSecondaryContainer = Color(0xFF354B40)
+val M3DarkOnSecondaryContainer = Color(0xFFCEE9D9)
+
+val M3DarkTertiary = Color(0xFFA6CCE0)
+val M3DarkOnTertiary = Color(0xFF083544)
+val M3DarkTertiaryContainer = Color(0xFF254C5B)
+val M3DarkOnTertiaryContainer = Color(0xFFC1E8FC)
+
+val M3DarkError = Color(0xFFFFB4AB)
+val M3DarkOnError = Color(0xFF690005)
+val M3DarkErrorContainer = Color(0xFF93000A)
+val M3DarkOnErrorContainer = Color(0xFFFFDAD6)
+
+val M3DarkBackground = Color(0xFF0F1512)
+val M3DarkOnBackground = Color(0xFFDEE4DE)
+val M3DarkSurface = Color(0xFF0F1512)
+val M3DarkOnSurface = Color(0xFFDEE4DE)
+val M3DarkSurfaceVariant = Color(0xFF404944)
+val M3DarkOnSurfaceVariant = Color(0xFFBFC9C2)
+
+val M3DarkOutline = Color(0xFF8A938D)
+val M3DarkOutlineVariant = Color(0xFF404944)
+
+val M3DarkSurfaceContainerLowest = Color(0xFF0A0F0D)
+val M3DarkSurfaceContainerLow = Color(0xFF171D1A)
+val M3DarkSurfaceContainer = Color(0xFF1B211E)
+val M3DarkSurfaceContainerHigh = Color(0xFF252C28)
+val M3DarkSurfaceContainerHighest = Color(0xFF303733)
+
+val ExpressiveLightColorScheme = lightColorScheme(
+    primary = M3LightPrimary,
+    onPrimary = M3LightOnPrimary,
+    primaryContainer = M3LightPrimaryContainer,
+    onPrimaryContainer = M3LightOnPrimaryContainer,
+    secondary = M3LightSecondary,
+    onSecondary = M3LightOnSecondary,
+    secondaryContainer = M3LightSecondaryContainer,
+    onSecondaryContainer = M3LightOnSecondaryContainer,
+    tertiary = M3LightTertiary,
+    onTertiary = M3LightOnTertiary,
+    tertiaryContainer = M3LightTertiaryContainer,
+    onTertiaryContainer = M3LightOnTertiaryContainer,
+    error = M3LightError,
+    onError = M3LightOnError,
+    errorContainer = M3LightErrorContainer,
+    onErrorContainer = M3LightOnErrorContainer,
+    background = M3LightBackground,
+    onBackground = M3LightOnBackground,
+    surface = M3LightSurface,
+    onSurface = M3LightOnSurface,
+    surfaceVariant = M3LightSurfaceVariant,
+    onSurfaceVariant = M3LightOnSurfaceVariant,
+    outline = M3LightOutline,
+    outlineVariant = M3LightOutlineVariant,
+    surfaceContainerLowest = M3LightSurfaceContainerLowest,
+    surfaceContainerLow = M3LightSurfaceContainerLow,
+    surfaceContainer = M3LightSurfaceContainer,
+    surfaceContainerHigh = M3LightSurfaceContainerHigh,
+    surfaceContainerHighest = M3LightSurfaceContainerHighest
+)
+
+val ExpressiveDarkColorScheme = darkColorScheme(
+    primary = M3DarkPrimary,
+    onPrimary = M3DarkOnPrimary,
+    primaryContainer = M3DarkPrimaryContainer,
+    onPrimaryContainer = M3DarkOnPrimaryContainer,
+    secondary = M3DarkSecondary,
+    onSecondary = M3DarkOnSecondary,
+    secondaryContainer = M3DarkSecondaryContainer,
+    onSecondaryContainer = M3DarkOnSecondaryContainer,
+    tertiary = M3DarkTertiary,
+    onTertiary = M3DarkOnTertiary,
+    tertiaryContainer = M3DarkTertiaryContainer,
+    onTertiaryContainer = M3DarkOnTertiaryContainer,
+    error = M3DarkError,
+    onError = M3DarkOnError,
+    errorContainer = M3DarkErrorContainer,
+    onErrorContainer = M3DarkOnErrorContainer,
+    background = M3DarkBackground,
+    onBackground = M3DarkOnBackground,
+    surface = M3DarkSurface,
+    onSurface = M3DarkOnSurface,
+    surfaceVariant = M3DarkSurfaceVariant,
+    onSurfaceVariant = M3DarkOnSurfaceVariant,
+    outline = M3DarkOutline,
+    outlineVariant = M3DarkOutlineVariant,
+    surfaceContainerLowest = M3DarkSurfaceContainerLowest,
+    surfaceContainerLow = M3DarkSurfaceContainerLow,
+    surfaceContainer = M3DarkSurfaceContainer,
+    surfaceContainerHigh = M3DarkSurfaceContainerHigh,
+    surfaceContainerHighest = M3DarkSurfaceContainerHighest
+)
+
+// ============================================================================
+// Legacy & Compatibility Tokens (keeps tests and specific UI styles functioning)
+// ============================================================================
+val BackgroundDark = M3DarkBackground
+val SurfaceDark = M3DarkSurface
+val SurfaceContainerLowest = M3DarkSurfaceContainerLowest
+val SurfaceContainerLow = M3DarkSurfaceContainerLow
+val SurfaceContainer = M3DarkSurfaceContainer
+val SurfaceContainerHigh = M3DarkSurfaceContainerHigh
+val SurfaceContainerHighest = M3DarkSurfaceContainerHighest
 
 val CardDark = SurfaceContainer
-val CardBorderDark = Color(0xFF2C3954)
-val CardBorderSubtle = Color(0xFF1E283C)
-val HeaderDark = Color(0xFF0B101B)
+val CardBorderDark = M3DarkOutlineVariant
+val CardBorderSubtle = M3DarkOutlineVariant.copy(alpha = 0.5f)
+val HeaderDark = M3DarkSurface
 
-// Material 3 Expressive Vibrant Palette
-val EmeraldPrimary = Color(0xFF10B981)
+val EmeraldPrimary = M3DarkPrimary
 val EmeraldVibrant = Color(0xFF00F5A0)
 val EmeraldLight = Color(0xFF34D399)
 val EmeraldDark = Color(0xFF059669)
-val EmeraldContainer = Color(0xFF064E3B)
+val EmeraldContainer = M3DarkPrimaryContainer
 val EmeraldGlow = Color(0x4010B981)
 
-// Expressive Chromatic Accents
 val CyanAccent = Color(0xFF06B6D4)
 val CyanGlow = Color(0x4006B6D4)
 val SkyAccent = Color(0xFF38BDF8)
@@ -38,11 +182,10 @@ val RoseContainer = Color(0xFF881337)
 val CoralAccent = Color(0xFFFF6B6B)
 val IndigoAccent = Color(0xFF6366F1)
 
-// Expressive Typography & Foreground Colors
-val TextPrimary = Color(0xFFF1F5F9)
-val TextSecondary = Color(0xFF94A3B8)
-val TextMuted = Color(0xFF64748B)
-val TextOnPrimary = Color(0xFF022C22)
+val TextPrimary = M3DarkOnSurface
+val TextSecondary = M3DarkOnSurfaceVariant
+val TextMuted = Color(0xFF8A938D)
+val TextOnPrimary = M3DarkOnPrimary
 
 // JSON Syntax Highlighting
 val JsonKeyColor = Color(0xFF38BDF8)       // Vivid Sky Blue

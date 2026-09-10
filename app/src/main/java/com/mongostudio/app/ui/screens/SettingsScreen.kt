@@ -41,7 +41,7 @@ fun SettingsScreen(
                 onBackClick = onNavigateBack
             )
         },
-        containerColor = BackgroundDark
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier

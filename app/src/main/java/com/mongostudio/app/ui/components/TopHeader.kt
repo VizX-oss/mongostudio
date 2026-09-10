@@ -1,7 +1,6 @@
 package com.mongostudio.app.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -12,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,13 +35,14 @@ fun TopHeader(
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
     Surface(
-        color = SurfaceDark,
+        color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
@@ -65,13 +64,13 @@ fun TopHeader(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(SurfaceContainerHigh)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back",
-                                tint = TextPrimary,
+                                tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -81,16 +80,19 @@ fun TopHeader(
                     Column {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleLargeEmphasized,
-                            color = TextPrimary,
-                            letterSpacing = (-0.3).sp
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            letterSpacing = (-0.3).sp,
+                            maxLines = 1
                         )
                         if (subtitle != null) {
                             Text(
                                 text = subtitle,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary,
-                                fontWeight = FontWeight.Medium
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
                             )
                         }
                     }
@@ -109,8 +111,8 @@ fun TopHeader(
                             else -> "Standalone"
                         },
                         isActive = isConnectedToCluster,
-                        activeColor = EmeraldLight,
-                        inactiveColor = TextMuted
+                        activeColor = MaterialTheme.colorScheme.primary,
+                        inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
 
                     if (onRefreshClick != null) {
@@ -122,13 +124,13 @@ fun TopHeader(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(SurfaceContainerHigh)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Refresh",
-                                tint = TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -143,13 +145,13 @@ fun TopHeader(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(EmeraldContainer)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
                                 .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Terminal,
                                 contentDescription = "Console",
-                                tint = EmeraldLight,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -164,13 +166,13 @@ fun TopHeader(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(SurfaceContainerHigh)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = "Settings",
-                                tint = TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -185,13 +187,13 @@ fun TopHeader(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(RoseAccent.copy(alpha = 0.15f))
+                                .background(MaterialTheme.colorScheme.errorContainer)
                                 .pressMorph()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PowerSettingsNew,
                                 contentDescription = "Disconnect",
-                                tint = RoseAccent,
+                                tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(18.dp)
                             )
                         }

@@ -6,19 +6,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 object MongoDnsResolver {
     private val client = OkHttpClient.Builder()
-        .connectTimeout(8, TimeUnit.SECONDS)
-        .readTimeout(8, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
         .build()
 
     private val gson = Gson()
 
     /**
-     * Resolves a mongodb+srv:// URI to a standard mongodb:// URI with explicit hosts.
+     * Resolves a mongodb+srv:// URI to a standard mongodb:// URI with explicit hosts and SSL/options.
      * If the URI is already mongodb://, it is returned unchanged.
      */
     suspend fun resolveUri(uriString: String): String = withContext(Dispatchers.IO) {
@@ -58,7 +57,7 @@ object MongoDnsResolver {
             val hostsJoined = hosts.joinToString(",")
             val txtOptions = queryTxtOptions(originalHost)
 
-            // Combine options
+            // Combine path and query
             val pathPart: String
             val existingQuery: String
             if (remainingPathAndQuery.startsWith('/')) {
@@ -80,14 +79,23 @@ object MongoDnsResolver {
 
             val queryParams = mutableListOf<String>()
             queryParams.add("ssl=true")
+
             if (txtOptions.isNotBlank()) {
-                queryParams.add(txtOptions)
+                val txtParams = txtOptions.split("&").filter { it.isNotBlank() }
+                queryParams.addAll(txtParams)
             }
             if (existingQuery.isNotBlank()) {
-                queryParams.add(existingQuery)
+                val userParams = existingQuery.split("&").filter { it.isNotBlank() }
+                for (param in userParams) {
+                    val key = param.substringBefore('=')
+                    // Prevent duplicate parameters from existingQuery overriding TXT unless intended
+                    if (!queryParams.any { it.startsWith("$key=", ignoreCase = true) }) {
+                        queryParams.add(param)
+                    }
+                }
             }
 
-            val finalQuery = queryParams.joinToString("&")
+            val finalQuery = queryParams.distinct().joinToString("&")
             val userInfo = if (credentials.isNotBlank()) "$credentials@" else ""
 
             return@withContext "mongodb://$userInfo$hostsJoined$pathPart?$finalQuery"
@@ -100,11 +108,15 @@ object MongoDnsResolver {
     private fun querySrvHosts(recordName: String): List<String> {
         val googleUrl = "https://dns.google/resolve?name=$recordName&type=SRV"
         val cloudflareUrl = "https://cloudflare-dns.com/dns-query?name=$recordName&type=SRV"
+        val quad9Url = "https://dns.quad9.net:5053/dns-query?name=$recordName&type=SRV"
 
-        val hosts = parseSrvFromUrl(googleUrl)
-        if (hosts.isNotEmpty()) return hosts
+        val hostsGoogle = parseSrvFromUrl(googleUrl)
+        if (hostsGoogle.isNotEmpty()) return hostsGoogle
 
-        return parseSrvFromUrl(cloudflareUrl, isCloudflare = true)
+        val hostsCloudflare = parseSrvFromUrl(cloudflareUrl, isCloudflare = true)
+        if (hostsCloudflare.isNotEmpty()) return hostsCloudflare
+
+        return parseSrvFromUrl(quad9Url, isCloudflare = true)
     }
 
     private fun parseSrvFromUrl(url: String, isCloudflare: Boolean = false): List<String> {
@@ -139,10 +151,22 @@ object MongoDnsResolver {
     }
 
     private fun queryTxtOptions(host: String): String {
+        val googleUrl = "https://dns.google/resolve?name=$host&type=TXT"
+        val cloudflareUrl = "https://cloudflare-dns.com/dns-query?name=$host&type=TXT"
+
+        val resGoogle = parseTxtFromUrl(googleUrl)
+        if (resGoogle.isNotBlank()) return resGoogle
+
+        return parseTxtFromUrl(cloudflareUrl, isCloudflare = true)
+    }
+
+    private fun parseTxtFromUrl(url: String, isCloudflare: Boolean = false): String {
         try {
-            val url = "https://dns.google/resolve?name=$host&type=TXT"
-            val req = Request.Builder().url(url).get().build()
-            client.newCall(req).execute().use { response ->
+            val reqBuilder = Request.Builder().url(url).get()
+            if (isCloudflare) {
+                reqBuilder.addHeader("accept", "application/dns-json")
+            }
+            client.newCall(reqBuilder.build()).execute().use { response ->
                 if (!response.isSuccessful) return ""
                 val body = response.body?.string() ?: return ""
                 val obj = gson.fromJson(body, JsonObject::class.java)

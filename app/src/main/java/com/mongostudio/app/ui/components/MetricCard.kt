@@ -1,12 +1,9 @@
 package com.mongostudio.app.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +17,7 @@ import com.mongostudio.app.ui.theme.*
 
 /**
  * Material 3 Expressive Metric Card.
- * Uses asymmetric squircle shapes, playful tonal containers, and glowing icon pills.
+ * Uses ElevatedCard, playful tonal containers, and glowing icon pills.
  */
 @Composable
 fun MetricCard(
@@ -32,15 +29,14 @@ fun MetricCard(
     accentColor: Color = EmeraldPrimary,
     onClick: (() -> Unit)? = null
 ) {
-    Box(
-        modifier = modifier
-            .clip(AsymmetricCardShape)
-            .background(SurfaceContainer)
-            .border(1.dp, CardBorderDark, AsymmetricCardShape)
-            .pressMorph(onClick = onClick)
-            .padding(16.dp)
+    ElevatedCard(
+        modifier = modifier.pressMorph(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
     ) {
-        Column {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -49,7 +45,7 @@ fun MetricCard(
                 Text(
                     text = title.uppercase(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -57,8 +53,7 @@ fun MetricCard(
                     modifier = Modifier
                         .size(34.dp)
                         .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.16f))
-                        .border(1.dp, accentColor.copy(alpha = 0.3f), CircleShape),
+                        .background(accentColor.copy(alpha = 0.16f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -74,8 +69,9 @@ fun MetricCard(
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmallEmphasized,
-                color = TextPrimary,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
                 letterSpacing = (-0.5).sp
             )
 
@@ -84,7 +80,7 @@ fun MetricCard(
                 Text(
                     text = subValue,
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }

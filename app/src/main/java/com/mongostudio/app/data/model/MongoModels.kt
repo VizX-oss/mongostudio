@@ -20,7 +20,8 @@ data class SavedConnection(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
     @SerializedName("maskedUri") val maskedUri: String,
-    @SerializedName("savedAt") val savedAt: String
+    @SerializedName("savedAt") val savedAt: String,
+    @SerializedName("colorTag") val colorTag: String = "emerald"
 )
 
 data class ClusterOverview(
