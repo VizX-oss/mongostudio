@@ -48,7 +48,7 @@ fun ExpressiveSplitButton(
     val isPrimaryPressed by primaryInteraction.collectIsPressedAsState()
     val primaryScale by animateFloatAsState(
         targetValue = if (isPrimaryPressed) 0.96f else 1.0f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = ExpressiveFastSpatialSpec,
         label = "primary_scale"
     )
 
@@ -56,7 +56,7 @@ fun ExpressiveSplitButton(
     val isTrailingPressed by trailingInteraction.collectIsPressedAsState()
     val trailingScale by animateFloatAsState(
         targetValue = if (isTrailingPressed) 0.94f else 1.0f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = ExpressiveFastSpatialSpec,
         label = "trailing_scale"
     )
 

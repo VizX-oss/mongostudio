@@ -64,19 +64,19 @@ fun ConnectedButtonGroup(
 
             val bgColor by animateColorAsState(
                 targetValue = if (isSelected) activeColor else Color.Transparent,
-                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                animationSpec = ExpressiveColorSpec,
                 label = "btn_group_bg"
             )
 
             val textColor by animateColorAsState(
                 targetValue = if (isSelected) activeContentColor else TextSecondary,
-                animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+                animationSpec = ExpressiveColorSpec,
                 label = "btn_group_text"
             )
 
             val scale by animateFloatAsState(
                 targetValue = if (isSelected) 1.0f else 0.98f,
-                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                animationSpec = ExpressiveFastSpatialSpec,
                 label = "btn_group_scale"
             )
 

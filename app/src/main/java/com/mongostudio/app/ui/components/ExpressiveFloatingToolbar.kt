@@ -66,7 +66,7 @@ fun ExpressiveFloatingToolbar(
                 val isPressed by interaction.collectIsPressedAsState()
                 val scale by animateFloatAsState(
                     targetValue = if (isPressed) 0.88f else 1.0f,
-                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    animationSpec = ExpressiveFastSpatialSpec,
                     label = "toolbar_icon_scale"
                 )
 

@@ -4,19 +4,50 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.delay
+
+/**
+ * Material 3 Expressive motion specifications (§9.3, §9.4).
+ * Spatial spring for position/scale/bounds, effects curve for fade/color.
+ */
+val ExpressiveFastSpatialSpec = spring<Float>(
+    dampingRatio = 0.75f,
+    stiffness = Spring.StiffnessMedium
+)
+
+val ExpressiveSpatialSpec = spring<Float>(
+    dampingRatio = 0.8f,
+    stiffness = Spring.StiffnessLow
+)
+
+val ExpressiveSlideSpatialSpec = spring<IntOffset>(
+    dampingRatio = 0.8f,
+    stiffness = Spring.StiffnessLow
+)
+
+val ExpressiveEffectsSpec = tween<Float>(
+    durationMillis = 200
+)
+
+val ExpressiveColorSpec = tween<Color>(
+    durationMillis = 180
+)
 
 /**
  * Material 3 Expressive Press-Morph Modifier (§9.1).
@@ -32,7 +63,7 @@ fun Modifier.pressMorph(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) pressedScale else 1f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = ExpressiveFastSpatialSpec,
         label = "pressMorphScale"
     )
 
@@ -75,9 +106,9 @@ fun StaggerEntrance(
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
-        enter = fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+        enter = fadeIn(animationSpec = ExpressiveEffectsSpec) +
             slideInVertically(
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                animationSpec = ExpressiveSlideSpatialSpec,
                 initialOffsetY = { it / 4 }
             ),
         content = content
