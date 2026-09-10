@@ -18,3 +18,5 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 
 build_artifacts/
+ci-artifacts/
+
