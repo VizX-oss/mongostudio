@@ -408,6 +408,8 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun runAggregate(dbName: String, colName: String, pipelineJson: String) = runAggregation(dbName, colName, pipelineJson)
+
     fun runAggregation(dbName: String, colName: String, pipelineJson: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)

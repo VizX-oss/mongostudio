@@ -221,7 +221,7 @@ fun AggregationScreen(
                         Button(
                             onClick = {
                                 haptic.performClickFeedback()
-                                viewModel.runAggregate(pipelineText)
+                                viewModel.runAggregation(dbName, colName, pipelineText)
                             },
                             enabled = !uiState.isLoading,
                             modifier = Modifier

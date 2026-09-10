@@ -22,6 +22,7 @@ fun ConfirmDialog(
     title: String,
     message: String,
     confirmText: String = "Delete",
+    dismissText: String = "Cancel",
     isDestructive: Boolean = true,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
@@ -89,7 +90,7 @@ fun ConfirmDialog(
                     onDismiss()
                 }
             ) {
-                Text("Cancel", color = TextSecondary)
+                Text(dismissText, color = TextSecondary)
             }
         }
     )
