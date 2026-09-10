@@ -25,7 +25,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.mongostudio.app.ui.theme.*
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun JsonEditorModal(
     title: String,

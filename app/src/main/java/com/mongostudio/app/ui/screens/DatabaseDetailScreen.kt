@@ -28,7 +28,6 @@ import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DatabaseDetailScreen(
     dbName: String,

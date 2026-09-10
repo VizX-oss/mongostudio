@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mongostudio.app.ui.theme.*
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ConfirmDialog(
     title: String,

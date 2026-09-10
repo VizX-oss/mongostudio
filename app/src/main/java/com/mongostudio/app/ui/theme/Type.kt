@@ -14,27 +14,11 @@ val Typography = Typography(
         lineHeight = 64.sp,
         color = TextPrimary
     ),
-    displayLargeEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.5).sp,
-        color = TextPrimary
-    ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 28.sp,
         lineHeight = 36.sp,
-        color = TextPrimary
-    ),
-    headlineMediumEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.3).sp,
         color = TextPrimary
     ),
     headlineSmall = TextStyle(
@@ -44,24 +28,9 @@ val Typography = Typography(
         lineHeight = 32.sp,
         color = TextPrimary
     ),
-    headlineSmallEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
-        letterSpacing = (-0.2).sp,
-        color = TextPrimary
-    ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        color = TextPrimary
-    ),
-    titleLargeEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         color = TextPrimary
@@ -73,23 +42,9 @@ val Typography = Typography(
         lineHeight = 24.sp,
         color = TextPrimary
     ),
-    titleMediumEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        color = TextPrimary
-    ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        color = TextPrimary
-    ),
-    bodyLargeEmphasized = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         color = TextPrimary
@@ -131,6 +86,40 @@ val Typography = Typography(
         color = TextMuted
     )
 )
+
+// Material 3 Expressive Emphasized Typography Extensions
+val Typography.displayLargeEmphasized: TextStyle
+    get() = displayLarge.copy(
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.5).sp
+    )
+
+val Typography.headlineMediumEmphasized: TextStyle
+    get() = headlineMedium.copy(
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.3).sp
+    )
+
+val Typography.headlineSmallEmphasized: TextStyle
+    get() = headlineSmall.copy(
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.2).sp
+    )
+
+val Typography.titleLargeEmphasized: TextStyle
+    get() = titleLarge.copy(
+        fontWeight = FontWeight.Bold
+    )
+
+val Typography.titleMediumEmphasized: TextStyle
+    get() = titleMedium.copy(
+        fontWeight = FontWeight.SemiBold
+    )
+
+val Typography.bodyLargeEmphasized: TextStyle
+    get() = bodyLarge.copy(
+        fontWeight = FontWeight.Medium
+    )
 
 val MonospaceCodeStyle = TextStyle(
     fontFamily = FontFamily.Monospace,
