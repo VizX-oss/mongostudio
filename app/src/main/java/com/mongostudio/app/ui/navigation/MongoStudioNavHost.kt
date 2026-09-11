@@ -1,5 +1,12 @@
 package com.mongostudio.app.ui.navigation
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -9,6 +16,35 @@ import androidx.navigation.navArgument
 import com.mongostudio.app.ui.screens.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
+// Shared slide transition specs — spring-based for natural, physics feel
+private val slideSpec = spring<Float>(
+    dampingRatio = 0.85f,
+    stiffness = Spring.StiffnessMediumLow
+)
+private val fadeTween = tween<Float>(durationMillis = 200)
+
+// Push forward: slide in from right, old screen slides out left
+private val enterTransition = slideInHorizontally(
+    animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
+    initialOffsetX = { fullWidth -> fullWidth / 4 }
+) + fadeIn(animationSpec = fadeTween)
+
+private val exitTransition = slideOutHorizontally(
+    animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow),
+    targetOffsetX = { fullWidth -> -fullWidth / 5 }
+) + fadeOut(animationSpec = tween(durationMillis = 180))
+
+// Pop back: slide in from left, screen slides out to right
+private val popEnterTransition = slideInHorizontally(
+    animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
+    initialOffsetX = { fullWidth -> -fullWidth / 4 }
+) + fadeIn(animationSpec = fadeTween)
+
+private val popExitTransition = slideOutHorizontally(
+    animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow),
+    targetOffsetX = { fullWidth -> fullWidth / 4 }
+) + fadeOut(animationSpec = tween(durationMillis = 180))
+
 @Composable
 fun MongoStudioNavHost(
     navController: NavHostController,
@@ -16,7 +52,11 @@ fun MongoStudioNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Connection.route
+        startDestination = Screen.Connection.route,
+        enterTransition = { enterTransition },
+        exitTransition = { exitTransition },
+        popEnterTransition = { popEnterTransition },
+        popExitTransition = { popExitTransition }
     ) {
         composable(Screen.Connection.route) {
             ConnectionScreen(

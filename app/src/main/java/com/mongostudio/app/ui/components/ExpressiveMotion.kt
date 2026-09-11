@@ -2,19 +2,20 @@ package com.mongostudio.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -27,8 +28,8 @@ import kotlinx.coroutines.delay
  * Spatial spring for position/scale/bounds, effects curve for fade/color.
  */
 val ExpressiveFastSpatialSpec = spring<Float>(
-    dampingRatio = 0.75f,
-    stiffness = Spring.StiffnessMedium
+    dampingRatio = 0.72f,
+    stiffness = Spring.StiffnessMediumLow
 )
 
 val ExpressiveSpatialSpec = spring<Float>(
@@ -37,28 +38,29 @@ val ExpressiveSpatialSpec = spring<Float>(
 )
 
 val ExpressiveSlideSpatialSpec = spring<IntOffset>(
-    dampingRatio = 0.8f,
-    stiffness = Spring.StiffnessLow
+    dampingRatio = 0.75f,
+    stiffness = Spring.StiffnessMediumLow
 )
 
 val ExpressiveEffectsSpec = tween<Float>(
-    durationMillis = 200
+    durationMillis = 180
 )
 
 val ExpressiveColorSpec = tween<Color>(
-    durationMillis = 180
+    durationMillis = 160
 )
 
 /**
  * Material 3 Expressive Press-Morph Modifier (§9.1).
- * Smooth spring-physics scale bounce on press using fastSpatialSpec.
+ * Smooth spring-physics scale bounce on press.
+ * Uses explicit remember pattern instead of deprecated composed{}.
  */
 @Composable
 fun Modifier.pressMorph(
     enabled: Boolean = true,
-    pressedScale: Float = 0.94f,
+    pressedScale: Float = 0.93f,
     onClick: (() -> Unit)? = null
-): Modifier = composed {
+): Modifier {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -67,7 +69,7 @@ fun Modifier.pressMorph(
         label = "pressMorphScale"
     )
 
-    this
+    return this
         .graphicsLayer {
             scaleX = scale
             scaleY = scale
@@ -87,19 +89,21 @@ fun Modifier.pressMorph(
 }
 
 /**
- * Material 3 Expressive Staggered Entrance Helper (§9.2).
- * Fades and slides in items with physics springs, without jank or snap.
+ * Material 3 Expressive Staggered Entrance (§9.2).
+ * Fades and slides in list items with spring physics.
+ * Key stability: uses `key = Unit` so re-parenting doesn't reset.
  */
 @Composable
 fun StaggerEntrance(
     index: Int,
-    staggerMs: Long = 35L,
+    staggerMs: Long = 30L,
     modifier: Modifier = Modifier,
     content: @Composable AnimatedVisibilityScope.() -> Unit
 ) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(index * staggerMs)
+        val delayMs = (index * staggerMs).coerceAtMost(300L) // cap max stagger
+        delay(delayMs)
         visible = true
     }
 
@@ -109,14 +113,19 @@ fun StaggerEntrance(
         enter = fadeIn(animationSpec = ExpressiveEffectsSpec) +
             slideInVertically(
                 animationSpec = ExpressiveSlideSpatialSpec,
-                initialOffsetY = { it / 4 }
+                initialOffsetY = { it / 5 }
+            ),
+        exit = fadeOut(animationSpec = tween(120)) +
+            slideOutVertically(
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessHigh),
+                targetOffsetY = { -it / 5 }
             ),
         content = content
     )
 }
 
 /**
- * Haptic feedback helper matching M3 Expressive tactile feel (§9.5).
+ * Haptic feedback helpers matching M3 Expressive tactile feel (§9.5).
  */
 fun HapticFeedback.performConfirmFeedback() {
     try {

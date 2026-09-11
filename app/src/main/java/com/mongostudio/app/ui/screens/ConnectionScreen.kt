@@ -7,7 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -72,7 +73,9 @@ fun ConnectionScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val listState = rememberLazyListState()
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -153,9 +156,17 @@ fun ConnectionScreen(
                 }
             }
 
-            // Error Banner
-            if (uiState.errorMessage != null) {
-                item {
+            // Error Banner — animated visibility for smooth appearance
+            item {
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = uiState.errorMessage != null,
+                    enter = androidx.compose.animation.fadeIn(
+                        animationSpec = androidx.compose.animation.core.tween(200)
+                    ) + androidx.compose.animation.expandVertically(),
+                    exit = androidx.compose.animation.fadeOut(
+                        animationSpec = androidx.compose.animation.core.tween(150)
+                    ) + androidx.compose.animation.shrinkVertically()
+                ) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -176,7 +187,7 @@ fun ConnectionScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = uiState.errorMessage!!,
+                                text = uiState.errorMessage ?: "",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.weight(1f)
@@ -528,14 +539,21 @@ fun ConnectionScreen(
                     }
                 }
             } else {
-                items(uiState.savedConnections, key = { it.id }) { saved ->
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        )
-                    ) {
+                itemsIndexed(
+                    items = uiState.savedConnections,
+                    key = { _, conn -> conn.id },
+                    contentType = { _, _ -> "saved_connection" }
+                ) { index, saved ->
+                    StaggerEntrance(index = index, staggerMs = 30L) {
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -635,11 +653,12 @@ fun ConnectionScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text("Connect", fontWeight = FontWeight.Bold)
                                 }
+                                }
                             }
                         }
-                    }
-                }
-            }
+                    } // ElevatedCard
+                } // StaggerEntrance
+            } // itemsIndexed
         }
     }
 

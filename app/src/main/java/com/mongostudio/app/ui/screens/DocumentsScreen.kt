@@ -347,17 +347,24 @@ fun DocumentsScreen(
             }
 
             // Documents List Cards
-            itemsIndexed(docs) { index, doc ->
+            itemsIndexed(
+                items = docs,
+                key = { index, doc -> doc["_id"]?.toString() ?: "doc_$index" },
+                contentType = { _, _ -> "document_card" }
+            ) { index, doc ->
                 val docId = doc["_id"]?.toString() ?: "doc_$index"
                 val jsonString = remember(doc) { prettyGson.toJson(doc) }
 
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    )
-                ) {
+                StaggerEntrance(index = index, staggerMs = 20L) {
+                    ElevatedCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem(),
+                        shape = MaterialTheme.shapes.large,
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                        )
+                    ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         // Document Header Row
                         Row(
@@ -437,7 +444,10 @@ fun DocumentsScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Document Body (Formatted Syntax Highlighting)
+                        // Document Body (Formatted Syntax Highlighting — cached)
+                        val highlightedJson = remember(jsonString) {
+                            JsonSyntaxHighlighter.highlightJson(jsonString)
+                        }
                         Surface(
                             shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
@@ -445,15 +455,15 @@ fun DocumentsScreen(
                         ) {
                             Box(modifier = Modifier.padding(12.dp)) {
                                 Text(
-                                    text = JsonSyntaxHighlighter.highlightJson(jsonString),
+                                    text = highlightedJson,
                                     style = MonospaceCodeStyle.copy(fontSize = 12.sp),
                                     maxLines = 14
                                 )
                             }
                         }
-                    }
-                }
-            }
+                    } // ElevatedCard
+                } // StaggerEntrance
+            } // itemsIndexed
 
             // Bottom space for FAB
             item {

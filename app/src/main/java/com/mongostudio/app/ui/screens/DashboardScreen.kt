@@ -1,10 +1,10 @@
 package com.mongostudio.app.ui.screens
 
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -87,7 +87,9 @@ fun DashboardScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -243,111 +245,118 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                items(filteredDatabases, key = { it.name }) { db ->
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                haptic.performClickFeedback()
-                                onNavigateToDatabase(db.name)
-                            },
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        )
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                itemsIndexed(
+                    items = filteredDatabases,
+                    key = { _, db -> db.name },
+                    contentType = { _, _ -> "database_card" }
+                ) { index, db ->
+                    StaggerEntrance(index = index, staggerMs = 28L) {
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem()
+                                .pressMorph(onClick = {
+                                    haptic.performClickFeedback()
+                                    onNavigateToDatabase(db.name)
+                                }),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = if (db.isSystemDb) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(42.dp)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
                                     ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = if (db.isSystemDb) Icons.Default.Lock else Icons.Default.Folder,
-                                                contentDescription = null,
-                                                tint = if (db.isSystemDb) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(20.dp)
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = if (db.isSystemDb) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primaryContainer,
+                                            modifier = Modifier.size(42.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = if (db.isSystemDb) Icons.Default.Lock else Icons.Default.Folder,
+                                                    contentDescription = null,
+                                                    tint = if (db.isSystemDb) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(12.dp))
+
+                                        Column {
+                                            Text(
+                                                text = db.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = "${db.collectionsCount} collections • ${FormatUtils.formatBytes(db.sizeOnDisk)}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        if (!db.isSystemDb) {
+                                            IconButton(
+                                                onClick = {
+                                                    haptic.performClickFeedback()
+                                                    dbToDrop = db
+                                                },
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.DeleteOutline,
+                                                    contentDescription = "Drop database",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
 
-                                    Column {
-                                        Text(
-                                            text = db.name,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "${db.collectionsCount} collections • ${FormatUtils.formatBytes(db.sizeOnDisk)}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    if (!db.isSystemDb) {
-                                        IconButton(
+                                        FilledTonalButton(
                                             onClick = {
                                                 haptic.performClickFeedback()
-                                                dbToDrop = db
+                                                onNavigateToDatabase(db.name)
                                             },
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
+                                            shape = PillShape,
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            ),
+                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                         ) {
+                                            Text("Explore", fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.width(4.dp))
                                             Icon(
-                                                Icons.Default.DeleteOutline,
-                                                contentDescription = "Drop database",
-                                                tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(18.dp)
+                                                Icons.AutoMirrored.Filled.ArrowForward,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
-                                    }
-
-                                    FilledTonalButton(
-                                        onClick = {
-                                            haptic.performClickFeedback()
-                                            onNavigateToDatabase(db.name)
-                                        },
-                                        shape = PillShape,
-                                        colors = ButtonDefaults.filledTonalButtonColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                                    ) {
-                                        Text("Explore", fontWeight = FontWeight.Bold)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.ArrowForward,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp)
-                                        )
                                     }
                                 }
                             }
                         }
-                    }
-                }
-            }
+                    } // StaggerEntrance
+                } // itemsIndexed
+            } // else
 
             // Spacing for FAB
             item {
