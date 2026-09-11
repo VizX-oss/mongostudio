@@ -228,6 +228,17 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun createDatabase(dbName: String, initialCollectionName: String) {
+        viewModelScope.launch {
+            DirectMongoService.createCollection(dbName, initialCollectionName).onSuccess {
+                _uiState.value = _uiState.value.copy(statusMessage = "Created database '$dbName' with collection '$initialCollectionName'")
+                loadOverview()
+            }.onFailure { err ->
+                _uiState.value = _uiState.value.copy(errorMessage = "Cannot create database: ${err.message}")
+            }
+        }
+    }
+
     fun createCollection(dbName: String, colName: String) {
         viewModelScope.launch {
             DirectMongoService.createCollection(dbName, colName).onSuccess {
