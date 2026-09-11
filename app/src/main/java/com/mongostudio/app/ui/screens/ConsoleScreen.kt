@@ -152,15 +152,15 @@ fun ConsoleScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = "Database Command Runner",
-                                style = MaterialTheme.typography.titleMediumEmphasized,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        Text("TARGET DATABASE", style = MaterialTheme.typography.labelSmall, color = TextMuted, fontWeight = FontWeight.Bold)
+                        Text("TARGET DATABASE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         OutlinedTextField(
                             value = dbName,
@@ -258,9 +258,9 @@ fun ConsoleScreen(
                     ) {
                         Text(
                             text = "Server Output",
-                            style = MaterialTheme.typography.titleMediumEmphasized,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         ExpressiveTag(
                             text = if (result["ok"] == 1.0 || result["ok"] == 1) "ok: 1" else "result",

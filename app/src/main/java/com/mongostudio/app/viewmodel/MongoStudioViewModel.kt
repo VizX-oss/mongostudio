@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mongostudio.app.data.model.*
+import com.mongostudio.app.data.preferences.ThemePreferences
+import com.mongostudio.app.data.preferences.ThemeSettings
 import com.mongostudio.app.data.service.DirectMongoService
 import com.mongostudio.app.data.service.StandaloneConnectionInfo
 import com.mongostudio.app.data.vault.EncryptedVault
@@ -42,6 +44,7 @@ data class UiState(
 
 class MongoStudioViewModel(application: Application) : AndroidViewModel(application) {
     val vault = EncryptedVault(application)
+    val themePreferences = ThemePreferences(application)
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -49,6 +52,10 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     init {
         loadSavedConnections()
     }
+
+    fun setFollowSystemTheme(enabled: Boolean) = themePreferences.setFollowSystemTheme(enabled)
+    fun setDarkMode(enabled: Boolean) = themePreferences.setDarkMode(enabled)
+    fun setAmoledMode(enabled: Boolean) = themePreferences.setAmoledMode(enabled)
 
     fun loadSavedConnections() {
         val list = vault.getSavedConnections()

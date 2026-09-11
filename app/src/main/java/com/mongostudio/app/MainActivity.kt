@@ -26,7 +26,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MongoStudioTheme {
+            val themeSettings by viewModel.themePreferences.themeSettings.collectAsState()
+            MongoStudioTheme(
+                followSystemTheme = themeSettings.followSystemTheme,
+                darkTheme = themeSettings.isDarkMode,
+                amoledMode = themeSettings.isAmoledMode
+            ) {
                 val uiState by viewModel.uiState.collectAsState()
                 val navController = rememberNavController()
 

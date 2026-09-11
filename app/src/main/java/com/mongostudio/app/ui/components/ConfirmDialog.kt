@@ -32,10 +32,10 @@ fun ConfirmDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = SurfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         shape = SquircleLarge,
-        titleContentColor = TextPrimary,
-        textContentColor = TextSecondary,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         icon = {
             Box(
                 modifier = Modifier
@@ -90,7 +90,7 @@ fun ConfirmDialog(
                     onDismiss()
                 }
             ) {
-                Text(dismissText, color = TextSecondary)
+                Text(dismissText, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )

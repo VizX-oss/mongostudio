@@ -30,6 +30,7 @@ fun TopHeader(
     onRefreshClick: (() -> Unit)? = null,
     onConsoleClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)? = null,
+    onThemeClick: (() -> Unit)? = null,
     onDisconnectClick: (() -> Unit)? = null
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -77,7 +78,7 @@ fun TopHeader(
                         Spacer(modifier = Modifier.width(12.dp))
                     }
 
-                    Column {
+                    Column(verticalArrangement = Arrangement.Center) {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleMedium,
@@ -152,6 +153,27 @@ fun TopHeader(
                                 imageVector = Icons.Default.Terminal,
                                 contentDescription = "Console",
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    if (onThemeClick != null) {
+                        IconButton(
+                            onClick = {
+                                haptics.performClickFeedback()
+                                onThemeClick()
+                            },
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .pressMorph()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Palette,
+                                contentDescription = "Theme",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }

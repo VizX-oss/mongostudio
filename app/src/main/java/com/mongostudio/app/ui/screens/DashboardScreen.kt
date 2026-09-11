@@ -1,7 +1,7 @@
 package com.mongostudio.app.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,14 +17,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mongostudio.app.data.model.DatabaseInfo
 import com.mongostudio.app.data.model.FormatUtils
 import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: MongoStudioViewModel,
@@ -35,16 +33,15 @@ fun DashboardScreen(
 ) {
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var newDbName by remember { mutableStateOf("") }
-    var newColName by remember { mutableStateOf("") }
-    var dbToDrop by remember { mutableStateOf<DatabaseInfo?>(null) }
-    var selectedFilter by remember { mutableStateOf("all") }
-    var searchQuery by remember { mutableStateOf("") }
+    val themeSettings by viewModel.themePreferences.themeSettings.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadOverview()
-    }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("all") }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var newDbName by remember { mutableStateOf("") }
+    var newInitialCollection by remember { mutableStateOf("") }
+    var dbToDrop by remember { mutableStateOf<DatabaseInfo?>(null) }
 
     val overview = uiState.overview
     val allDatabases = overview?.databases ?: emptyList()
@@ -64,57 +61,16 @@ fun DashboardScreen(
         topBar = {
             TopHeader(
                 title = uiState.activeClusterName ?: "MongoDB Cluster",
-                subtitle = "v${uiState.activeClusterVersion ?: "Unknown"} • Direct Wire",
+                subtitle = "v${uiState.activeClusterVersion ?: "Unknown"} • Wire TLS",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
                 onRefreshClick = { viewModel.loadOverview() },
-                onConsoleClick = onNavigateToConsole,
-                onSettingsClick = onNavigateToSettings,
+                onThemeClick = { showThemeDialog = true },
                 onDisconnectClick = {
                     viewModel.disconnect()
                     onDisconnect()
                 }
             )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 3.dp
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {
-                        haptic.performClickFeedback()
-                        onDisconnect()
-                    },
-                    icon = { Icon(Icons.Default.VpnKey, contentDescription = "Sessions") },
-                    label = { Text("Sessions") }
-                )
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { },
-                    icon = { Icon(Icons.Default.Storage, contentDescription = "Databases") },
-                    label = { Text("Databases") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {
-                        haptic.performClickFeedback()
-                        onNavigateToConsole()
-                    },
-                    icon = { Icon(Icons.Default.Terminal, contentDescription = "Console") },
-                    label = { Text("Console") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {
-                        haptic.performClickFeedback()
-                        onNavigateToSettings()
-                    },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") }
-                )
-            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -149,7 +105,7 @@ fun DashboardScreen(
                             title = "Total Size",
                             value = FormatUtils.formatBytes(overview?.totalSize ?: 0L),
                             icon = Icons.Default.Storage,
-                            accentColor = EmeraldPrimary,
+                            accentColor = MaterialTheme.colorScheme.primary,
                             subValue = "${allDatabases.size} databases",
                             modifier = Modifier.weight(1f)
                         )
@@ -228,18 +184,27 @@ fun DashboardScreen(
                         FilterChip(
                             selected = selectedFilter == "system",
                             onClick = { selectedFilter = "system" },
-                            label = { Text("System (${allDatabases.count { it.isSystemDb }})") },
+                            label = { Text("System DBs (${allDatabases.count { it.isSystemDb }})") },
                             shape = CircleShape
                         )
                     }
                 }
             }
 
-            // Loading Indicator
-            if (uiState.isLoading) {
+            // Loading state with M3 Expressive Squiggly Circular Spinner
+            if (uiState.isLoading && filteredDatabases.isEmpty()) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularWavySpinner(
+                            sizeDp = 44.dp,
+                            strokeWidth = 3.5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -280,7 +245,12 @@ fun DashboardScreen(
             } else {
                 items(filteredDatabases, key = { it.name }) { db ->
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptic.performClickFeedback()
+                                onNavigateToDatabase(db.name)
+                            },
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -292,11 +262,14 @@ fun DashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Surface(
                                         shape = CircleShape,
                                         color = if (db.isSystemDb) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(40.dp)
+                                        modifier = Modifier.size(42.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
@@ -325,19 +298,26 @@ fun DashboardScreen(
                                     }
                                 }
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     if (!db.isSystemDb) {
                                         IconButton(
                                             onClick = {
                                                 haptic.performClickFeedback()
                                                 dbToDrop = db
-                                            }
+                                            },
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
                                         ) {
                                             Icon(
                                                 Icons.Default.DeleteOutline,
                                                 contentDescription = "Drop database",
                                                 tint = MaterialTheme.colorScheme.error,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
@@ -347,7 +327,11 @@ fun DashboardScreen(
                                             haptic.performClickFeedback()
                                             onNavigateToDatabase(db.name)
                                         },
-                                        shape = CircleShape,
+                                        shape = PillShape,
+                                        colors = ButtonDefaults.filledTonalButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                     ) {
                                         Text("Explore", fontWeight = FontWeight.Bold)
@@ -372,12 +356,23 @@ fun DashboardScreen(
         }
     }
 
-    // Drop Database Dialog
+    // Appearance & Theme Settings Dialog
+    if (showThemeDialog) {
+        ThemeSettingsDialog(
+            settings = themeSettings,
+            onFollowSystemThemeChange = { viewModel.setFollowSystemTheme(it) },
+            onDarkModeChange = { viewModel.setDarkMode(it) },
+            onAmoledModeChange = { viewModel.setAmoledMode(it) },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // Drop DB Confirmation Dialog
     if (dbToDrop != null) {
         val target = dbToDrop!!
         ConfirmDialog(
-            title = "Drop Database: ${target.name}",
-            message = "Are you sure you want to completely DROP '${target.name}'? This will delete all collections and documents permanently.",
+            title = "Drop Database",
+            message = "Are you sure you want to drop '${target.name}'? This will permanently delete all its collections and data.",
             confirmText = "Drop Database",
             dismissText = "Cancel",
             isDestructive = true,
@@ -393,40 +388,47 @@ fun DashboardScreen(
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("Create New Database") },
+            title = { Text("Create Database") },
             text = {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    Text(
+                        text = "MongoDB creates databases automatically when the first collection is created.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     OutlinedTextField(
                         value = newDbName,
                         onValueChange = { newDbName = it },
                         label = { Text("Database Name") },
                         singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
                     )
                     OutlinedTextField(
-                        value = newColName,
-                        onValueChange = { newColName = it },
+                        value = newInitialCollection,
+                        onValueChange = { newInitialCollection = it },
                         label = { Text("Initial Collection Name") },
+                        placeholder = { Text("e.g. users or items") },
                         singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
                     )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (newDbName.isNotBlank() && newColName.isNotBlank()) {
-                            viewModel.createCollection(newDbName.trim(), newColName.trim())
-                            showCreateDialog = false
+                        if (newDbName.isNotBlank() && newInitialCollection.isNotBlank()) {
+                            viewModel.createDatabase(newDbName.trim(), newInitialCollection.trim())
                             newDbName = ""
-                            newColName = ""
+                            newInitialCollection = ""
+                            showCreateDialog = false
                         }
                     },
+                    enabled = newDbName.isNotBlank() && newInitialCollection.isNotBlank(),
                     shape = CircleShape
                 ) {
                     Text("Create")

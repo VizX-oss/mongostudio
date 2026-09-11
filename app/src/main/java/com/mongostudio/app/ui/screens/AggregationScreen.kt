@@ -175,16 +175,16 @@ fun AggregationScreen(
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = "Pipeline Stages",
-                                    style = MaterialTheme.typography.titleMediumEmphasized,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
 
                             ExpressiveTag(
                                 text = "JSON Array",
-                                containerColor = SurfaceContainerHigh,
-                                contentColor = TextSecondary
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -271,9 +271,9 @@ fun AggregationScreen(
                     ) {
                         Text(
                             text = "Pipeline Output",
-                            style = MaterialTheme.typography.titleMediumEmphasized,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         ExpressiveTag(

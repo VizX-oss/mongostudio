@@ -1,13 +1,12 @@
 package com.mongostudio.app.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mongostudio.app.data.model.CollectionInfo
 import com.mongostudio.app.data.model.FormatUtils
 import com.mongostudio.app.ui.components.*
@@ -36,7 +34,10 @@ fun DatabaseDetailScreen(
 ) {
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
+    val themeSettings by viewModel.themePreferences.themeSettings.collectAsState()
+
     var showAddCollectionDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     var newColName by remember { mutableStateOf("") }
     var colToDrop by remember { mutableStateOf<CollectionInfo?>(null) }
 
@@ -55,6 +56,7 @@ fun DatabaseDetailScreen(
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
                 onBackClick = onNavigateBack,
+                onThemeClick = { showThemeDialog = true },
                 onRefreshClick = { viewModel.loadCollections(dbName) }
             )
         },
@@ -149,11 +151,20 @@ fun DatabaseDetailScreen(
                 }
             }
 
-            // Loading state
+            // Loading state with M3 Expressive Squiggly Spinner
             if (uiState.isLoading) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularWavySpinner(
+                            sizeDp = 44.dp,
+                            strokeWidth = 3.5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -197,23 +208,31 @@ fun DatabaseDetailScreen(
             } else {
                 items(collections, key = { it.name }) { col ->
                     ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                haptic.performClickFeedback()
+                                onNavigateToDocuments(dbName, col.name)
+                            },
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.elevatedCardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         )
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Surface(
                                         shape = CircleShape,
                                         color = MaterialTheme.colorScheme.secondaryContainer,
-                                        modifier = Modifier.size(38.dp)
+                                        modifier = Modifier.size(40.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Icon(
@@ -246,18 +265,22 @@ fun DatabaseDetailScreen(
                                     onClick = {
                                         haptic.performClickFeedback()
                                         colToDrop = col
-                                    }
+                                    },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
                                 ) {
                                     Icon(
                                         Icons.Default.DeleteOutline,
                                         contentDescription = "Drop collection",
                                         tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
                             }
 
-                            // Collection Actions Row
+                            // Enhanced Collection Actions Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -267,7 +290,12 @@ fun DatabaseDetailScreen(
                                         haptic.performClickFeedback()
                                         onNavigateToDocuments(dbName, col.name)
                                     },
-                                    shape = CircleShape,
+                                    shape = PillShape,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1.2f)
                                 ) {
                                     Icon(Icons.Default.FindInPage, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -280,12 +308,13 @@ fun DatabaseDetailScreen(
                                         haptic.performClickFeedback()
                                         onNavigateToIndexes(dbName, col.name)
                                     },
-                                    shape = CircleShape,
+                                    shape = PillShape,
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(Icons.Default.FormatListNumbered, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Indexes")
+                                    Text("Indexes", fontWeight = FontWeight.Medium)
                                 }
 
                                 OutlinedButton(
@@ -293,12 +322,13 @@ fun DatabaseDetailScreen(
                                         haptic.performClickFeedback()
                                         onNavigateToAggregation(dbName, col.name)
                                     },
-                                    shape = CircleShape,
+                                    shape = PillShape,
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(Icons.Default.Hub, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Pipeline")
+                                    Text("Pipeline", fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
@@ -313,12 +343,23 @@ fun DatabaseDetailScreen(
         }
     }
 
-    // Drop Collection Dialog
+    // Appearance & Theme Settings Dialog
+    if (showThemeDialog) {
+        ThemeSettingsDialog(
+            settings = themeSettings,
+            onFollowSystemThemeChange = { viewModel.setFollowSystemTheme(it) },
+            onDarkModeChange = { viewModel.setDarkMode(it) },
+            onAmoledModeChange = { viewModel.setAmoledMode(it) },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // Drop Collection Confirmation Dialog
     if (colToDrop != null) {
         val target = colToDrop!!
         ConfirmDialog(
-            title = "Drop Collection: ${target.name}",
-            message = "Are you sure you want to permanently delete collection '${target.name}' and all its ${target.docCount} documents?",
+            title = "Drop Collection",
+            message = "Are you sure you want to drop '${target.name}' from database '$dbName'? All documents will be deleted.",
             confirmText = "Drop Collection",
             dismissText = "Cancel",
             isDestructive = true,
@@ -334,26 +375,38 @@ fun DatabaseDetailScreen(
     if (showAddCollectionDialog) {
         AlertDialog(
             onDismissRequest = { showAddCollectionDialog = false },
-            title = { Text("Create Collection in '$dbName'") },
+            title = { Text("New Collection") },
             text = {
-                OutlinedTextField(
-                    value = newColName,
-                    onValueChange = { newColName = it },
-                    label = { Text("Collection Name") },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.medium,
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    Text(
+                        text = "Create a new collection in database '$dbName'",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = newColName,
+                        onValueChange = { newColName = it },
+                        label = { Text("Collection Name") },
+                        placeholder = { Text("e.g. orders, logs") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (newColName.isNotBlank()) {
                             viewModel.createCollection(dbName, newColName.trim())
-                            showAddCollectionDialog = false
                             newColName = ""
+                            showAddCollectionDialog = false
                         }
                     },
+                    enabled = newColName.isNotBlank(),
                     shape = CircleShape
                 ) {
                     Text("Create")

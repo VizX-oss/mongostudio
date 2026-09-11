@@ -52,6 +52,9 @@ class StandaloneMongoTest {
         assertNotNull(com.mongostudio.app.ui.theme.AsymmetricCardShape)
         assertNotNull(com.mongostudio.app.ui.theme.EmeraldPrimary)
         assertNotNull(com.mongostudio.app.ui.theme.SurfaceContainer)
+        assertNotNull(com.mongostudio.app.ui.theme.ExpressiveAmoledColorScheme)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF000000), com.mongostudio.app.ui.theme.ExpressiveAmoledColorScheme.background)
+        assertEquals(androidx.compose.ui.graphics.Color(0xFF000000), com.mongostudio.app.ui.theme.ExpressiveAmoledColorScheme.surface)
     }
 }
 

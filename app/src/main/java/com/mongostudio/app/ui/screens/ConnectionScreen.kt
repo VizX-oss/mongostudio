@@ -4,10 +4,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -37,26 +41,18 @@ fun ConnectionScreen(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uiState by viewModel.uiState.collectAsState()
+    val themeSettings by viewModel.themePreferences.themeSettings.collectAsState()
 
-    var uriText by remember { mutableStateOf("mongodb+srv://username:password@2nd-alt-ub.9zwqoto.mongodb.net/?appName=2nd-Alt-UB") }
-    var clusterName by remember { mutableStateOf("2nd-Alt-UB Production") }
+    var uriText by remember { mutableStateOf("") }
+    var clusterName by remember { mutableStateOf("") }
     var isUriPasswordVisible by remember { mutableStateOf(false) }
     var saveConnection by remember { mutableStateOf(true) }
-    var selectedColorTag by remember { mutableStateOf("emerald") }
 
+    var showThemeDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<SavedConnection?>(null) }
     var itemToEdit by remember { mutableStateOf<SavedConnection?>(null) }
     var editNameText by remember { mutableStateOf("") }
     var editUriText by remember { mutableStateOf("") }
-    var editColorTag by remember { mutableStateOf("emerald") }
-
-    val colorOptions = listOf(
-        "emerald" to EmeraldPrimary,
-        "sky" to SkyAccent,
-        "amber" to AmberAccent,
-        "purple" to PurpleAccent,
-        "rose" to RoseAccent
-    )
 
     LaunchedEffect(uiState.isConnectedToCluster) {
         if (uiState.isConnectedToCluster) {
@@ -67,10 +63,10 @@ fun ConnectionScreen(
     Scaffold(
         topBar = {
             TopHeader(
-                title = "MongoStudio",
-                subtitle = "Material 3 Expressive",
+                title = "MongoDB Studio",
+                subtitle = null,
                 isConnectedToCluster = false,
-                onSettingsClick = onNavigateToSettings,
+                onThemeClick = { showThemeDialog = true },
                 onRefreshClick = { viewModel.loadSavedConnections() }
             )
         },
@@ -83,7 +79,7 @@ fun ConnectionScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Hero Expressive Card
+            // Hero Expressive Card with App-Icon Style Logo
             item {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -102,23 +98,36 @@ fun ConnectionScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.Dataset,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(26.dp)
+                            // Android App Icon Style Logo
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.tertiary
+                                            )
+                                        )
                                     )
-                                }
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color.White.copy(alpha = 0.25f),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Storage,
+                                    contentDescription = "MongoDB Studio Logo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(30.dp)
+                                )
                             }
 
                             ExpressiveLiveBadge(
-                                label = "Direct Atlas & Wire",
+                                label = "Direct Wire & TLS",
                                 isActive = true,
                                 activeColor = MaterialTheme.colorScheme.primary
                             )
@@ -127,7 +136,7 @@ fun ConnectionScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "MongoDB Mobile Client",
+                            text = "MongoDB Studio",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -212,7 +221,7 @@ fun ConnectionScreen(
                                 onClick = {},
                                 label = {
                                     Text(
-                                        if (isAtlas) "Atlas SRV" else "Direct IP/Host",
+                                        if (isAtlas) "Atlas SRV" else "Direct Host",
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 },
@@ -221,14 +230,14 @@ fun ConnectionScreen(
                                         if (isAtlas) Icons.Default.CloudQueue else Icons.Default.Dns,
                                         contentDescription = null,
                                         modifier = Modifier.size(16.dp),
-                                        tint = if (isAtlas) EmeraldLight else SkyAccent
+                                        tint = if (isAtlas) MaterialTheme.colorScheme.primary else SkyAccent
                                     )
                                 },
                                 shape = CircleShape
                             )
                         }
 
-                        // Presets Row
+                        // Presets Row (Cleaned: paste and localhost only)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -253,17 +262,6 @@ fun ConnectionScreen(
                             SuggestionChip(
                                 onClick = {
                                     haptic.performClickFeedback()
-                                    uriText = "mongodb+srv://username:password@2nd-alt-ub.9zwqoto.mongodb.net/?appName=2nd-Alt-UB"
-                                    clusterName = "2nd-Alt-UB Atlas"
-                                },
-                                label = { Text("2nd-Alt-UB") },
-                                icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp)) },
-                                shape = CircleShape
-                            )
-
-                            SuggestionChip(
-                                onClick = {
-                                    haptic.performClickFeedback()
                                     uriText = "mongodb://10.0.2.2:27017"
                                     clusterName = "Localhost"
                                 },
@@ -281,7 +279,7 @@ fun ConnectionScreen(
                                 viewModel.clearPingTest()
                             },
                             label = { Text("MongoDB Connection String") },
-                            placeholder = { Text("mongodb+srv://user:pass@cluster.mongodb.net/...") },
+                            placeholder = { Text("mongodb+srv://user:pass@cluster.net/...") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = false,
                             maxLines = 3,
@@ -304,7 +302,7 @@ fun ConnectionScreen(
                         OutlinedTextField(
                             value = clusterName,
                             onValueChange = { clusterName = it },
-                            label = { Text("Session Nickname / Alias") },
+                            label = { Text("Cluster Alias / Nickname (Optional)") },
                             placeholder = { Text("e.g. Production Cluster") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -376,7 +374,7 @@ fun ConnectionScreen(
                             }
                         }
 
-                        // Save Checkbox and Color Selection
+                        // Save Checkbox (Clean: tag picker removed)
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
@@ -393,37 +391,7 @@ fun ConnectionScreen(
                             )
                         }
 
-                        if (saveConnection) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.padding(start = 12.dp)
-                            ) {
-                                Text(
-                                    text = "Tag:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                colorOptions.forEach { (tag, color) ->
-                                    FilterChip(
-                                        selected = selectedColorTag == tag,
-                                        onClick = { selectedColorTag = tag },
-                                        label = { Text(tag.replaceFirstChar { it.uppercase() }) },
-                                        leadingIcon = {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(10.dp)
-                                                    .clip(CircleShape)
-                                                    .background(color)
-                                            )
-                                        },
-                                        shape = CircleShape
-                                    )
-                                }
-                            }
-                        }
-
-                        // Actions Row: Ping Test + Connect Button
+                        // Actions Row: Ping Test + Connect Button with Squiggly M3 Spinners
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -439,7 +407,11 @@ fun ConnectionScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 if (uiState.isTestingPing) {
-                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    CircularWavySpinner(
+                                        sizeDp = 18.dp,
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 } else {
                                     Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -450,23 +422,26 @@ fun ConnectionScreen(
 
                             Button(
                                 onClick = {
-                                    haptic.performClickFeedback()
+                                    haptic.performConfirmFeedback()
                                     viewModel.connect(
                                         uri = uriText,
-                                        name = clusterName,
-                                        save = saveConnection,
-                                        colorTag = selectedColorTag
+                                        name = clusterName.ifBlank { null },
+                                        save = saveConnection
                                     )
                                 },
-                                enabled = !uiState.isConnecting,
+                                enabled = !uiState.isConnecting && !uiState.isTestingPing && uriText.isNotBlank(),
                                 shape = CircleShape,
-                                modifier = Modifier.weight(1.3f)
+                                modifier = Modifier.weight(1.3f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                )
                             ) {
                                 if (uiState.isConnecting) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
+                                    CircularWavySpinner(
+                                        sizeDp = 18.dp,
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text("Connecting...")
@@ -514,7 +489,7 @@ fun ConnectionScreen(
                 }
             }
 
-            // Saved Sessions List
+            // Saved Sessions List (Cleaned: no tag buttons or colored dots)
             if (uiState.savedConnections.isEmpty()) {
                 item {
                     ElevatedCard(
@@ -554,14 +529,6 @@ fun ConnectionScreen(
                 }
             } else {
                 items(uiState.savedConnections, key = { it.id }) { saved ->
-                    val tagColor = when (saved.colorTag) {
-                        "sky" -> SkyAccent
-                        "amber" -> AmberAccent
-                        "purple" -> PurpleAccent
-                        "rose" -> RoseAccent
-                        else -> EmeraldPrimary
-                    }
-
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
@@ -576,12 +543,20 @@ fun ConnectionScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(12.dp)
-                                            .clip(CircleShape)
-                                            .background(tagColor)
-                                    )
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                Icons.Default.Dns,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = saved.name,
@@ -598,7 +573,6 @@ fun ConnectionScreen(
                                             itemToEdit = saved
                                             editNameText = saved.name
                                             editUriText = ""
-                                            editColorTag = saved.colorTag
                                         },
                                         modifier = Modifier.size(34.dp)
                                     ) {
@@ -669,6 +643,17 @@ fun ConnectionScreen(
         }
     }
 
+    // Appearance & Theme Settings Dialog
+    if (showThemeDialog) {
+        ThemeSettingsDialog(
+            settings = themeSettings,
+            onFollowSystemThemeChange = { viewModel.setFollowSystemTheme(it) },
+            onDarkModeChange = { viewModel.setDarkMode(it) },
+            onAmoledModeChange = { viewModel.setAmoledMode(it) },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
     // Delete Confirmation Dialog
     if (itemToDelete != null) {
         val target = itemToDelete!!
@@ -686,7 +671,7 @@ fun ConnectionScreen(
         )
     }
 
-    // Edit Session Dialog
+    // Edit Session Dialog (Cleaned: no tag buttons)
     if (itemToEdit != null) {
         val target = itemToEdit!!
         AlertDialog(
@@ -716,29 +701,6 @@ fun ConnectionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium
                     )
-
-                    Text("Color Tag:", style = MaterialTheme.typography.labelMedium)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        colorOptions.forEach { (tag, color) ->
-                            FilterChip(
-                                selected = editColorTag == tag,
-                                onClick = { editColorTag = tag },
-                                label = { Text(tag.replaceFirstChar { it.uppercase() }) },
-                                leadingIcon = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                    )
-                                },
-                                shape = CircleShape
-                            )
-                        }
-                    }
                 }
             },
             confirmButton = {
@@ -747,8 +709,7 @@ fun ConnectionScreen(
                         viewModel.updateSavedConnection(
                             id = target.id,
                             newName = editNameText,
-                            newUri = editUriText.ifBlank { null },
-                            colorTag = editColorTag
+                            newUri = editUriText.ifBlank { null }
                         )
                         itemToEdit = null
                     },

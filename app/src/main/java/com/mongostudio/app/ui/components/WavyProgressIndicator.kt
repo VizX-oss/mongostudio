@@ -3,6 +3,7 @@ package com.mongostudio.app.ui.components
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -90,21 +91,23 @@ fun WavyProgressIndicator(
 
 /**
  * Circular Wavy Spinner in Material 3 Expressive style.
+ * Draws an organic sinusoidal wave revolving in a loop.
  */
 @Composable
 fun CircularWavySpinner(
     modifier: Modifier = Modifier,
-    sizeDp: Dp = 40.dp,
-    color: Color = EmeraldPrimary,
+    sizeDp: Dp = 32.dp,
+    color: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = color.copy(alpha = 0.2f),
     waveCount: Int = 6,
-    strokeWidth: Dp = 3.5.dp
+    strokeWidth: Dp = 3.dp
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "circular_wavy_transition")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600, easing = LinearEasing),
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation_anim"
@@ -113,11 +116,20 @@ fun CircularWavySpinner(
     Canvas(modifier = modifier.size(sizeDp)) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val baseRadius = (size.minDimension / 2f) - (strokeWidth.toPx() * 1.5f)
-        val amp = strokeWidth.toPx() * 0.8f
+        val amp = strokeWidth.toPx() * 0.75f
         val rotRad = Math.toRadians(rotation.toDouble()).toFloat()
 
+        // Background circular track
+        drawCircle(
+            color = trackColor,
+            radius = baseRadius,
+            center = center,
+            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+        )
+
+        // Animated squiggly wave
         val path = Path()
-        val steps = 120
+        val steps = 100
         for (i in 0..steps) {
             val theta = (i.toFloat() / steps) * (2 * PI).toFloat()
             val r = baseRadius + amp * sin(theta * waveCount + rotRad)

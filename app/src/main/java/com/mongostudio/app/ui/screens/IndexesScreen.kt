@@ -109,7 +109,11 @@ fun IndexesScreen(
             if (uiState.isLoading) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularWavySpinner(
+                            sizeDp = 44.dp,
+                            strokeWidth = 3.5.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
