@@ -460,7 +460,8 @@ fun DocumentsScreen(
                                     maxLines = 14
                                 )
                             }
-                        }
+                        } // Surface
+                        } // Column body
                     } // ElevatedCard
                 } // StaggerEntrance
             } // itemsIndexed
