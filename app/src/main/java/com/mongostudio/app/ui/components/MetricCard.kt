@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.sp
 import com.mongostudio.app.ui.theme.*
 
 /**
- * Material 3 Expressive Metric Card.
- * Uses ElevatedCard, playful tonal containers, and glowing icon pills.
+ * Material 3 Expressive Metric Card (§6.3, §9.2).
+ * Uses ElevatedCard, surface containers, accented icon pill, and NumberTicker for animated digit transitions.
  */
 @Composable
 fun MetricCard(
@@ -67,12 +67,10 @@ fun MetricCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                letterSpacing = (-0.5).sp
+            NumberTicker(
+                value = value,
+                textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (subValue != null) {

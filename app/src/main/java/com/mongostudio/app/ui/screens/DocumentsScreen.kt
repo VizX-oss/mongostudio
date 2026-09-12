@@ -5,10 +5,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,11 +19,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.GsonBuilder
 import com.mongostudio.app.ui.components.*
 import com.mongostudio.app.ui.theme.*
@@ -37,8 +41,10 @@ fun DocumentsScreen(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val themeSettings by viewModel.themeSettings.collectAsStateWithLifecycle()
     val prettyGson = remember { GsonBuilder().setPrettyPrinting().serializeNulls().create() }
+    val listState = rememberLazyListState()
 
     var isFilterExpanded by remember { mutableStateOf(false) }
     var filterText by remember { mutableStateOf(uiState.filterJson) }
@@ -64,6 +70,8 @@ fun DocumentsScreen(
                 subtitle = "$dbName • Documents",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
+                isDark = themeSettings.isDarkMode,
+                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack,
                 onRefreshClick = { viewModel.runQuery() }
             )
@@ -83,13 +91,18 @@ fun DocumentsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
             // Query Filter & Pipeline Card
             item {
                 ElevatedCard(
@@ -356,113 +369,150 @@ fun DocumentsScreen(
                 val jsonString = remember(doc) { prettyGson.toJson(doc) }
 
                 StaggerEntrance(index = index, staggerMs = 20L) {
-                    ElevatedCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem(),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        )
-                    ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Document Header Row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f, fill = false)
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                haptic.performConfirmFeedback()
+                                docToDeleteId = docId
+                                false
+                            } else false
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            val bgCol by animateColorAsState(
+                                targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
+                                    MaterialTheme.colorScheme.errorContainer
+                                } else Color.Transparent,
+                                label = "DismissBg"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(MaterialTheme.shapes.large)
+                                    .background(bgCol)
+                                    .padding(end = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
                             ) {
-                                SuggestionChip(
-                                    onClick = {
-                                        val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clip.setPrimaryClip(ClipData.newPlainText("Document ID", docId))
-                                        Toast.makeText(context, "Copied _id: $docId", Toast.LENGTH_SHORT).show()
-                                    },
-                                    label = {
-                                        Text(
-                                            text = "_id: $docId",
-                                            style = MonospaceCodeStyle.copy(fontSize = 11.sp),
-                                            maxLines = 1
-                                        )
-                                    },
-                                    icon = {
-                                        Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    },
-                                    shape = CircleShape
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
-
-                            // Document Card Actions
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                FilledTonalButton(
-                                    onClick = {
-                                        haptic.performClickFeedback()
-                                        editingDocId = docId
-                                        editingDocJson = jsonString
-                                    },
-                                    shape = CircleShape,
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
-                                ) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Edit", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                                }
-
-                                Spacer(modifier = Modifier.width(6.dp))
-
-                                IconButton(
-                                    onClick = {
-                                        val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clip.setPrimaryClip(ClipData.newPlainText("Document JSON", jsonString))
-                                        Toast.makeText(context, "Copied JSON to clipboard", Toast.LENGTH_SHORT).show()
-                                    },
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy JSON", modifier = Modifier.size(18.dp))
-                                }
-
-                                IconButton(
-                                    onClick = {
-                                        haptic.performClickFeedback()
-                                        docToDeleteId = docId
-                                    },
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.DeleteOutline,
-                                        contentDescription = "Delete Document",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
                         }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Document Body (Formatted Syntax Highlighting — cached)
-                        val highlightedJson = remember(jsonString) {
-                            JsonSyntaxHighlighter.highlightJson(jsonString)
-                        }
-                        Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
-                            modifier = Modifier.fillMaxWidth()
+                    ) {
+                        ElevatedCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
                         ) {
-                            Box(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = highlightedJson,
-                                    style = MonospaceCodeStyle.copy(fontSize = 12.sp),
-                                    maxLines = 14
-                                )
-                            }
-                        } // Surface
-                        } // Column body
-                    } // ElevatedCard
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Document Header Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    ) {
+                                        SuggestionChip(
+                                            onClick = {
+                                                val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                clip.setPrimaryClip(ClipData.newPlainText("Document ID", docId))
+                                                Toast.makeText(context, "Copied _id: $docId", Toast.LENGTH_SHORT).show()
+                                            },
+                                            label = {
+                                                Text(
+                                                    text = "_id: $docId",
+                                                    style = MonospaceCodeStyle.copy(fontSize = 11.sp),
+                                                    maxLines = 1
+                                                )
+                                            },
+                                            icon = {
+                                                Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            },
+                                            shape = CircleShape
+                                        )
+                                    }
+
+                                    // Document Card Actions
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        FilledTonalButton(
+                                            onClick = {
+                                                haptic.performClickFeedback()
+                                                editingDocId = docId
+                                                editingDocJson = jsonString
+                                            },
+                                            shape = CircleShape,
+                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Edit", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        Spacer(modifier = Modifier.width(6.dp))
+
+                                        IconButton(
+                                            onClick = {
+                                                val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                                clip.setPrimaryClip(ClipData.newPlainText("Document JSON", jsonString))
+                                                Toast.makeText(context, "Copied JSON to clipboard", Toast.LENGTH_SHORT).show()
+                                            },
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy JSON", modifier = Modifier.size(18.dp))
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                haptic.performClickFeedback()
+                                                docToDeleteId = docId
+                                            },
+                                            modifier = Modifier.size(34.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DeleteOutline,
+                                                contentDescription = "Delete Document",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // Document Body (Formatted Syntax Highlighting — cached)
+                                val highlightedJson = remember(jsonString) {
+                                    JsonSyntaxHighlighter.highlightJson(jsonString)
+                                }
+                                Surface(
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Box(modifier = Modifier.padding(12.dp)) {
+                                        Text(
+                                            text = highlightedJson,
+                                            style = MonospaceCodeStyle.copy(fontSize = 12.sp),
+                                            maxLines = 14
+                                        )
+                                    }
+                                } // Surface
+                            } // Column body
+                        } // ElevatedCard
+                    } // SwipeToDismissBox
                 } // StaggerEntrance
             } // itemsIndexed
 
@@ -471,7 +521,13 @@ fun DocumentsScreen(
                 Spacer(modifier = Modifier.height(72.dp))
             }
         }
+
+        VelocityAwareScrollbar(
+            listState = listState,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
+}
 
     // Interactive Edit Document Modal
     if (editingDocId != null && editingDocJson != null) {
@@ -520,9 +576,11 @@ fun DocumentsScreen(
         ConfirmDialog(
             title = "Delete Document",
             message = "Are you sure you want to permanently delete document '${docToDeleteId}' from '$colName'?",
-            confirmText = "Delete",
+            confirmText = "Hold to Delete",
             dismissText = "Cancel",
             isDestructive = true,
+            requireHoldToConfirm = true,
+            holdDurationMs = 1000L,
             onConfirm = {
                 docToDeleteId?.let { viewModel.deleteDocument(it) }
                 docToDeleteId = null

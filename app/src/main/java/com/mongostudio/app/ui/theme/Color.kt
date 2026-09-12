@@ -5,7 +5,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 // ============================================================================
-// Google Material 3 Expressive — Light Color Scheme
+// Google Material 3 Expressive — 30 Surface & Color Roles (Light Emerald Pine)
 // ============================================================================
 val M3LightPrimary = Color(0xFF006C4C)
 val M3LightOnPrimary = Color(0xFFFFFFFF)
@@ -37,6 +37,8 @@ val M3LightOnSurfaceVariant = Color(0xFF404944)
 val M3LightOutline = Color(0xFF707974)
 val M3LightOutlineVariant = Color(0xFFBFC9C2)
 
+val M3LightSurfaceDim = Color(0xFFD6DCD6)
+val M3LightSurfaceBright = Color(0xFFF5FBF5)
 val M3LightSurfaceContainerLowest = Color(0xFFFFFFFF)
 val M3LightSurfaceContainerLow = Color(0xFFEFF5EF)
 val M3LightSurfaceContainer = Color(0xFFE9EFEA)
@@ -44,7 +46,7 @@ val M3LightSurfaceContainerHigh = Color(0xFFE3EAE4)
 val M3LightSurfaceContainerHighest = Color(0xFFDEE4DE)
 
 // ============================================================================
-// Google Material 3 Expressive — Dark Color Scheme
+// Google Material 3 Expressive — 30 Surface & Color Roles (Dark Emerald Pine)
 // ============================================================================
 val M3DarkPrimary = Color(0xFF6FDBAC)
 val M3DarkOnPrimary = Color(0xFF003825)
@@ -76,11 +78,65 @@ val M3DarkOnSurfaceVariant = Color(0xFFBFC9C2)
 val M3DarkOutline = Color(0xFF8A938D)
 val M3DarkOutlineVariant = Color(0xFF404944)
 
+val M3DarkSurfaceDim = Color(0xFF0F1512)
+val M3DarkSurfaceBright = Color(0xFF353C37)
 val M3DarkSurfaceContainerLowest = Color(0xFF0A0F0D)
 val M3DarkSurfaceContainerLow = Color(0xFF171D1A)
 val M3DarkSurfaceContainer = Color(0xFF1B211E)
 val M3DarkSurfaceContainerHigh = Color(0xFF252C28)
 val M3DarkSurfaceContainerHighest = Color(0xFF303733)
+
+// ============================================================================
+// Google Material 3 Expressive — AMOLED Pitch Black (#000000) Tokens
+// ============================================================================
+val AmoledBackground = Color(0xFF000000)
+val AmoledSurface = Color(0xFF000000)
+val AmoledOnSurface = Color(0xFFF0EDF2)
+val AmoledSurfaceContainerLowest = Color(0xFF000000)
+val AmoledSurfaceContainerLow = Color(0xFF0A0A0A)
+val AmoledSurfaceContainer = Color(0xFF121212)
+val AmoledSurfaceContainerHigh = Color(0xFF1C1C1E)
+val AmoledSurfaceContainerHighest = Color(0xFF262628)
+val AmoledOutline = Color(0xFF38383A)
+val AmoledOutlineVariant = Color(0xFF222224)
+
+/**
+ * Creates pure AMOLED pitch-black color scheme with high contrast container tiers.
+ */
+fun createAmoledColorScheme(
+    primary: Color,
+    onPrimary: Color,
+    primaryContainer: Color,
+    onPrimaryContainer: Color,
+    secondary: Color,
+    onSecondary: Color,
+    tertiary: Color,
+    onTertiary: Color
+) = darkColorScheme(
+    primary = primary,
+    onPrimary = onPrimary,
+    primaryContainer = primaryContainer,
+    onPrimaryContainer = onPrimaryContainer,
+    secondary = secondary,
+    onSecondary = onSecondary,
+    tertiary = tertiary,
+    onTertiary = onTertiary,
+    background = AmoledBackground,
+    onBackground = AmoledOnSurface,
+    surface = AmoledSurface,
+    onSurface = AmoledOnSurface,
+    surfaceVariant = Color(0xFF1A1A1A),
+    onSurfaceVariant = Color(0xFFCAC4D0),
+    surfaceDim = AmoledBackground,
+    surfaceBright = Color(0xFF2A2A2A),
+    surfaceContainerLowest = AmoledSurfaceContainerLowest,
+    surfaceContainerLow = AmoledSurfaceContainerLow,
+    surfaceContainer = AmoledSurfaceContainer,
+    surfaceContainerHigh = AmoledSurfaceContainerHigh,
+    surfaceContainerHighest = AmoledSurfaceContainerHighest,
+    outline = AmoledOutline,
+    outlineVariant = AmoledOutlineVariant
+)
 
 val ExpressiveLightColorScheme = lightColorScheme(
     primary = M3LightPrimary,
@@ -146,39 +202,15 @@ val ExpressiveDarkColorScheme = darkColorScheme(
     surfaceContainerHighest = M3DarkSurfaceContainerHighest
 )
 
-// ============================================================================
-// Google Material 3 Expressive — AMOLED Pitch Black Scheme (#000000)
-// ============================================================================
-val ExpressiveAmoledColorScheme = darkColorScheme(
+val ExpressiveAmoledColorScheme = createAmoledColorScheme(
     primary = M3DarkPrimary,
     onPrimary = M3DarkOnPrimary,
     primaryContainer = Color(0xFF003825),
     onPrimaryContainer = Color(0xFF8CF8C7),
     secondary = M3DarkSecondary,
     onSecondary = M3DarkOnSecondary,
-    secondaryContainer = Color(0xFF1F352A),
-    onSecondaryContainer = Color(0xFFCEE9D9),
     tertiary = M3DarkTertiary,
-    onTertiary = M3DarkOnTertiary,
-    tertiaryContainer = Color(0xFF16323D),
-    onTertiaryContainer = Color(0xFFC1E8FC),
-    error = M3DarkError,
-    onError = M3DarkOnError,
-    errorContainer = M3DarkErrorContainer,
-    onErrorContainer = M3DarkOnErrorContainer,
-    background = Color(0xFF000000),
-    onBackground = Color(0xFFEDEDED),
-    surface = Color(0xFF000000),
-    onSurface = Color(0xFFEDEDED),
-    surfaceVariant = Color(0xFF1A1A1A),
-    onSurfaceVariant = Color(0xFFB0B0B0),
-    outline = Color(0xFF383838),
-    outlineVariant = Color(0xFF202020),
-    surfaceContainerLowest = Color(0xFF000000),
-    surfaceContainerLow = Color(0xFF0A0A0A),
-    surfaceContainer = Color(0xFF121212),
-    surfaceContainerHigh = Color(0xFF1A1A1A),
-    surfaceContainerHighest = Color(0xFF242424)
+    onTertiary = M3DarkOnTertiary
 )
 
 // ============================================================================

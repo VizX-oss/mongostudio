@@ -56,6 +56,8 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     fun setFollowSystemTheme(enabled: Boolean) = themePreferences.setFollowSystemTheme(enabled)
     fun setDarkMode(enabled: Boolean) = themePreferences.setDarkMode(enabled)
     fun setAmoledMode(enabled: Boolean) = themePreferences.setAmoledMode(enabled)
+    fun setPalettePreset(preset: com.mongostudio.app.ui.theme.ColorPalettePreset) = themePreferences.setPalettePreset(preset)
+    fun setThemeMode(mode: com.mongostudio.app.ui.theme.AppThemeMode) = themePreferences.setThemeMode(mode)
 
     fun loadSavedConnections() {
         val list = vault.getSavedConnections()

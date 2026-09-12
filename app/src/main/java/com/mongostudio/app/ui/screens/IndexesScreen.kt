@@ -3,7 +3,8 @@ package com.mongostudio.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.gson.Gson
 import com.mongostudio.app.data.model.IndexInfo
 import com.mongostudio.app.ui.components.*
@@ -31,7 +33,10 @@ fun IndexesScreen(
     onNavigateBack: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val themeSettings by viewModel.themeSettings.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
     var showCreateIndexDialog by remember { mutableStateOf(false) }
     var fieldName by remember { mutableStateOf("") }
     var isDescending by remember { mutableStateOf(false) }
@@ -52,6 +57,8 @@ fun IndexesScreen(
                 subtitle = "$dbName • $colName",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
+                isDark = themeSettings.isDarkMode,
+                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack,
                 onRefreshClick = {
                     haptic.performClickFeedback()
@@ -74,67 +81,19 @@ fun IndexesScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            item {
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Collection Indexes ($colName)",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Indexes enhance query performance on frequently queried fields. Total active: ${indexes.size}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            if (uiState.isLoading) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularWavySpinner(
-                            sizeDp = 44.dp,
-                            strokeWidth = 3.5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-
-            if (!uiState.isLoading && indexes.isEmpty()) {
-                item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        )
-                    ) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("No indexes found", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            } else {
-                items(indexes, key = { it.name ?: "" }) { idx ->
-                    val isDefaultIdIndex = idx.name == "_id_"
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
@@ -142,96 +101,161 @@ fun IndexesScreen(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         )
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.Key,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = idx.name ?: "Unnamed Index",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                if (!isDefaultIdIndex) {
-                                    IconButton(
-                                        onClick = {
-                                            haptic.performClickFeedback()
-                                            indexToDrop = idx
-                                        }
-                                    ) {
-                                        Icon(
-                                            Icons.Default.DeleteOutline,
-                                            contentDescription = "Drop index",
-                                            tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Key Pattern
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Key Pattern: ${gson.toJson(idx.key ?: emptyMap<String, Any>())}",
-                                style = MonospaceCodeStyle.copy(fontSize = 12.sp),
+                                text = "Collection Indexes ($colName)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Indexes enhance query performance on frequently queried fields. Total active: ${indexes.size}",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
 
-                            // Badges Row
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                if (idx.unique == true) {
-                                    SuggestionChip(
-                                        onClick = {},
-                                        label = { Text("Unique") },
-                                        shape = CircleShape
+                if (uiState.isLoading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            CircularWavySpinner(
+                                sizeDp = 44.dp,
+                                strokeWidth = 3.5.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                if (!uiState.isLoading && indexes.isEmpty()) {
+                    item {
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = CardDefaults.elevatedCardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                            )
+                        ) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                Text("No indexes found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                } else {
+                    itemsIndexed(indexes, key = { _, it -> it.name ?: "" }) { index, idx ->
+                        val isDefaultIdIndex = idx.name == "_id_"
+                        StaggerEntrance(index = index) {
+                            ElevatedCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .animateItem(),
+                                shape = MaterialTheme.shapes.large,
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                Icons.Default.Key,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = idx.name ?: "Unnamed Index",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+
+                                        if (!isDefaultIdIndex) {
+                                            IconButton(
+                                                onClick = {
+                                                    haptic.performClickFeedback()
+                                                    indexToDrop = idx
+                                                }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.DeleteOutline,
+                                                    contentDescription = "Drop index",
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Key Pattern
+                                    Text(
+                                        text = "Key Pattern: ${gson.toJson(idx.key ?: emptyMap<String, Any>())}",
+                                        style = MonospaceCodeStyle.copy(fontSize = 12.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                }
-                                if (isDefaultIdIndex) {
-                                    SuggestionChip(
-                                        onClick = {},
-                                        label = { Text("Primary Key") },
-                                        shape = CircleShape
-                                    )
-                                }
-                                idx.v?.let { v ->
-                                    SuggestionChip(
-                                        onClick = {},
-                                        label = { Text("v$v") },
-                                        shape = CircleShape
-                                    )
+
+                                    // Badges Row
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        if (idx.unique == true) {
+                                            SuggestionChip(
+                                                onClick = {},
+                                                label = { Text("Unique") },
+                                                shape = CircleShape
+                                            )
+                                        }
+                                        if (isDefaultIdIndex) {
+                                            SuggestionChip(
+                                                onClick = {},
+                                                label = { Text("Primary Key") },
+                                                shape = CircleShape
+                                            )
+                                        }
+                                        idx.v?.let { v ->
+                                            SuggestionChip(
+                                                onClick = {},
+                                                label = { Text("v$v") },
+                                                shape = CircleShape
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                item {
+                    Spacer(modifier = Modifier.height(72.dp))
+                }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(72.dp))
-            }
+            VelocityAwareScrollbar(
+                listState = listState,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            )
         }
     }
 
-    // Drop Index Confirm Dialog
+    // Drop Index Confirm Dialog with Hold to Drop
     if (indexToDrop != null) {
         val target = indexToDrop!!
         ConfirmDialog(
             title = "Drop Index: ${target.name}",
             message = "Are you sure you want to drop index '${target.name}' from collection '$colName'?",
-            confirmText = "Drop Index",
+            confirmText = "Hold to Drop",
             dismissText = "Cancel",
             isDestructive = true,
+            requireHoldToConfirm = true,
+            holdDurationMs = 1000L,
             onConfirm = {
                 target.name?.let { viewModel.dropIndex(dbName, colName, it) }
                 indexToDrop = null

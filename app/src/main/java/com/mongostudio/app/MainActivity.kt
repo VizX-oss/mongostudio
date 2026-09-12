@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.mongostudio.app.ui.navigation.MongoStudioNavHost
 import com.mongostudio.app.ui.theme.MongoStudioTheme
@@ -26,13 +26,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val themeSettings by viewModel.themePreferences.themeSettings.collectAsState()
+            val themeSettings by viewModel.themePreferences.themeSettings.collectAsStateWithLifecycle()
             MongoStudioTheme(
-                followSystemTheme = themeSettings.followSystemTheme,
-                darkTheme = themeSettings.isDarkMode,
-                amoledMode = themeSettings.isAmoledMode
+                themeConfig = themeSettings.toThemeConfig()
             ) {
-                val uiState by viewModel.uiState.collectAsState()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val navController = rememberNavController()
 
                 LaunchedEffect(uiState.statusMessage) {

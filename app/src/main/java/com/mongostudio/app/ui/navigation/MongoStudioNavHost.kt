@@ -9,36 +9,27 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.mongostudio.app.ui.screens.*
 import com.mongostudio.app.viewmodel.MongoStudioViewModel
 
-// Shared slide transition specs — spring-based for natural, physics feel
-private val slideSpec = spring<Float>(
-    dampingRatio = 0.85f,
-    stiffness = Spring.StiffnessMediumLow
-)
-private val fadeTween = tween<Float>(durationMillis = 200)
-
-// Push forward: slide in from right, old screen slides out left
+// Shared slide transition specs — spring-based for natural, physics feel (§8.1, §9.3)
 private val enterTransition = slideInHorizontally(
     animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
     initialOffsetX = { fullWidth -> fullWidth / 4 }
-) + fadeIn(animationSpec = fadeTween)
+) + fadeIn(animationSpec = tween(durationMillis = 200))
 
 private val exitTransition = slideOutHorizontally(
     animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow),
     targetOffsetX = { fullWidth -> -fullWidth / 5 }
 ) + fadeOut(animationSpec = tween(durationMillis = 180))
 
-// Pop back: slide in from left, screen slides out to right
 private val popEnterTransition = slideInHorizontally(
     animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow),
     initialOffsetX = { fullWidth -> -fullWidth / 4 }
-) + fadeIn(animationSpec = fadeTween)
+) + fadeIn(animationSpec = tween(durationMillis = 200))
 
 private val popExitTransition = slideOutHorizontally(
     animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow),
@@ -52,126 +43,102 @@ fun MongoStudioNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Connection.route,
+        startDestination = Screen.Connection,
         enterTransition = { enterTransition },
         exitTransition = { exitTransition },
         popEnterTransition = { popEnterTransition },
         popExitTransition = { popExitTransition }
     ) {
-        composable(Screen.Connection.route) {
+        composable<Screen.Connection> {
             ConnectionScreen(
                 viewModel = viewModel,
                 onNavigateToDashboard = {
-                    navController.navigate(Screen.Dashboard.route) {
-                        popUpTo(Screen.Connection.route) { inclusive = true }
+                    navController.navigate(Screen.Dashboard) {
+                        popUpTo<Screen.Connection> { inclusive = true }
                     }
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route)
+                    navController.navigate(Screen.Settings)
                 }
             )
         }
 
-        composable(Screen.Dashboard.route) {
+        composable<Screen.Dashboard> {
             DashboardScreen(
                 viewModel = viewModel,
                 onNavigateToDatabase = { dbName ->
-                    navController.navigate(Screen.DatabaseDetail.createRoute(dbName))
+                    navController.navigate(Screen.DatabaseDetail(dbName = dbName))
                 },
                 onNavigateToConsole = {
-                    navController.navigate(Screen.Console.route)
+                    navController.navigate(Screen.Console)
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route)
+                    navController.navigate(Screen.Settings)
                 },
                 onDisconnect = {
-                    navController.navigate(Screen.Connection.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
+                    navController.navigate(Screen.Connection) {
+                        popUpTo<Screen.Dashboard> { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(
-            route = Screen.DatabaseDetail.route,
-            arguments = listOf(navArgument("dbName") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val dbName = backStackEntry.arguments?.getString("dbName") ?: ""
+        composable<Screen.DatabaseDetail> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.DatabaseDetail>()
             DatabaseDetailScreen(
-                dbName = dbName,
+                dbName = route.dbName,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDocuments = { db, col ->
-                    navController.navigate(Screen.Documents.createRoute(db, col))
+                    navController.navigate(Screen.Documents(dbName = db, colName = col))
                 },
                 onNavigateToAggregation = { db, col ->
-                    navController.navigate(Screen.Aggregation.createRoute(db, col))
+                    navController.navigate(Screen.Aggregation(dbName = db, colName = col))
                 },
                 onNavigateToIndexes = { db, col ->
-                    navController.navigate(Screen.Indexes.createRoute(db, col))
+                    navController.navigate(Screen.Indexes(dbName = db, colName = col))
                 }
             )
         }
 
-        composable(
-            route = Screen.Documents.route,
-            arguments = listOf(
-                navArgument("dbName") { type = NavType.StringType },
-                navArgument("colName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val dbName = backStackEntry.arguments?.getString("dbName") ?: ""
-            val colName = backStackEntry.arguments?.getString("colName") ?: ""
+        composable<Screen.Documents> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.Documents>()
             DocumentsScreen(
-                dbName = dbName,
-                colName = colName,
+                dbName = route.dbName,
+                colName = route.colName,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable(
-            route = Screen.Aggregation.route,
-            arguments = listOf(
-                navArgument("dbName") { type = NavType.StringType },
-                navArgument("colName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val dbName = backStackEntry.arguments?.getString("dbName") ?: ""
-            val colName = backStackEntry.arguments?.getString("colName") ?: ""
+        composable<Screen.Aggregation> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.Aggregation>()
             AggregationScreen(
-                dbName = dbName,
-                colName = colName,
+                dbName = route.dbName,
+                colName = route.colName,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable(
-            route = Screen.Indexes.route,
-            arguments = listOf(
-                navArgument("dbName") { type = NavType.StringType },
-                navArgument("colName") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val dbName = backStackEntry.arguments?.getString("dbName") ?: ""
-            val colName = backStackEntry.arguments?.getString("colName") ?: ""
+        composable<Screen.Indexes> { backStackEntry ->
+            val route = backStackEntry.toRoute<Screen.Indexes>()
             IndexesScreen(
-                dbName = dbName,
-                colName = colName,
+                dbName = route.dbName,
+                colName = route.colName,
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable(Screen.Console.route) {
+        composable<Screen.Console> {
             ConsoleScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable(Screen.Settings.route) {
+        composable<Screen.Settings> {
             SettingsScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() }

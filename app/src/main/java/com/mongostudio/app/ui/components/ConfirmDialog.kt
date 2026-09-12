@@ -24,11 +24,13 @@ fun ConfirmDialog(
     confirmText: String = "Delete",
     dismissText: String = "Cancel",
     isDestructive: Boolean = true,
+    requireHoldToConfirm: Boolean = false,
+    holdDurationMs: Long = 1200L,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val accentColor = if (isDestructive) RoseAccent else AmberAccent
+    val accentColor = if (isDestructive) MaterialTheme.colorScheme.error else AmberAccent
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -61,26 +63,48 @@ fun ConfirmDialog(
             )
         },
         text = {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (requireHoldToConfirm) {
+                    Text(
+                        text = "Press and hold to confirm action:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accentColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    haptic.performConfirmFeedback()
-                    onConfirm()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = accentColor,
-                    contentColor = Color.White
-                ),
-                shape = PillShape,
-                modifier = Modifier.pressMorph()
-            ) {
-                Text(confirmText, fontWeight = FontWeight.Bold)
+            if (requireHoldToConfirm) {
+                PressAndHoldTriggerButton(
+                    text = confirmText,
+                    holdDurationMs = holdDurationMs,
+                    color = accentColor,
+                    onTrigger = {
+                        haptic.performConfirmFeedback()
+                        onConfirm()
+                    }
+                )
+            } else {
+                Button(
+                    onClick = {
+                        haptic.performConfirmFeedback()
+                        onConfirm()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = accentColor,
+                        contentColor = Color.White
+                    ),
+                    shape = PillShape,
+                    modifier = Modifier.pressMorph()
+                ) {
+                    Text(confirmText, fontWeight = FontWeight.Bold)
+                }
             }
         },
         dismissButton = {

@@ -1,20 +1,32 @@
 package com.mongostudio.app.ui.navigation
 
-sealed class Screen(val route: String) {
-    object Connection : Screen("connection")
-    object Dashboard : Screen("dashboard")
-    object DatabaseDetail : Screen("database/{dbName}") {
-        fun createRoute(dbName: String) = "database/$dbName"
-    }
-    object Documents : Screen("documents/{dbName}/{colName}") {
-        fun createRoute(dbName: String, colName: String) = "documents/$dbName/$colName"
-    }
-    object Aggregation : Screen("aggregation/{dbName}/{colName}") {
-        fun createRoute(dbName: String, colName: String) = "aggregation/$dbName/$colName"
-    }
-    object Indexes : Screen("indexes/{dbName}/{colName}") {
-        fun createRoute(dbName: String, colName: String) = "indexes/$dbName/$colName"
-    }
-    object Console : Screen("console")
-    object Settings : Screen("settings")
+import kotlinx.serialization.Serializable
+
+/**
+ * Type-Safe Navigation Routes for MongoStudio (Navigation 2.8+) (§10).
+ */
+sealed interface Screen {
+    @Serializable
+    data object Connection : Screen
+
+    @Serializable
+    data object Dashboard : Screen
+
+    @Serializable
+    data class DatabaseDetail(val dbName: String) : Screen
+
+    @Serializable
+    data class Documents(val dbName: String, val colName: String) : Screen
+
+    @Serializable
+    data class Aggregation(val dbName: String, val colName: String) : Screen
+
+    @Serializable
+    data class Indexes(val dbName: String, val colName: String) : Screen
+
+    @Serializable
+    data object Console : Screen
+
+    @Serializable
+    data object Settings : Screen
 }

@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.mongostudio.app.ui.theme.*
 
 /**
- * Material 3 Expressive Header with status badge, pill actions, and modern hierarchy.
+ * Material 3 Expressive Top Header with status badge, DayNightMorphToggle, and action icons (§6.4, §9.8).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,11 +26,13 @@ fun TopHeader(
     subtitle: String? = null,
     isConnectedToCluster: Boolean,
     pingMs: Long? = null,
+    isDark: Boolean = true,
     onBackClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
     onConsoleClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)? = null,
     onThemeClick: (() -> Unit)? = null,
+    onToggleDayNight: (() -> Unit)? = null,
     onDisconnectClick: (() -> Unit)? = null
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -115,6 +117,17 @@ fun TopHeader(
                         activeColor = MaterialTheme.colorScheme.primary,
                         inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
+
+                    // Day/Night Morph Switch
+                    if (onToggleDayNight != null) {
+                        DayNightMorphToggle(
+                            isDark = isDark,
+                            onToggle = {
+                                haptics.performClickFeedback()
+                                onToggleDayNight()
+                            }
+                        )
+                    }
 
                     if (onRefreshClick != null) {
                         IconButton(

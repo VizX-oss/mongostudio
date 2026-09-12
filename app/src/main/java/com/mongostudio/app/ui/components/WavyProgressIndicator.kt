@@ -2,18 +2,27 @@ package com.mongostudio.app.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
@@ -21,8 +30,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Material 3 Expressive Linear Wavy Progress Indicator.
- * Optimised: fewer path points using cubic bezier approximation of sin wave.
+ * Material 3 Expressive Linear Wavy Progress Indicator (§7.2).
+ * Cubic bezier approximation of sine wave for fluid rendering.
  */
 @Composable
 fun WavyProgressIndicator(
@@ -65,15 +74,14 @@ fun WavyProgressIndicator(
             cap = StrokeCap.Round
         )
 
-        // Wave using cubic bezier: 4 control points per period → smooth & fast
+        // Wave using cubic bezier
         val path = Path()
-        val cp = lambdaPx * 0.3183f // (1/π)*λ — ideal for sine cubic approx
+        val cp = lambdaPx * 0.3183f
         var x = -phaseOffset % lambdaPx
         var isFirst = true
         while (x <= width + lambdaPx) {
             val y0 = midY + ampPx * sin((x / lambdaPx) * (2 * PI).toFloat())
             if (isFirst) { path.moveTo(x, y0); isFirst = false }
-            // One full sine period via two cubic bezier segments
             val xMid = x + lambdaPx / 2f
             val xEnd = x + lambdaPx
             path.cubicTo(
@@ -98,9 +106,7 @@ fun WavyProgressIndicator(
 }
 
 /**
- * Material 3 Expressive Circular Wavy Spinner.
- * Optimised: pre-computed sin lookup table, smooth arc sweep animation with
- * dual-rotation trick (like AOSP's circular progress indicator), and cubic path.
+ * Material 3 Expressive Circular Wavy Spinner (§7.2).
  */
 @Composable
 fun CircularWavySpinner(
@@ -113,7 +119,6 @@ fun CircularWavySpinner(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "circular_wavy")
 
-    // Outer rotation — constant speed, clockwise
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -124,7 +129,6 @@ fun CircularWavySpinner(
         label = "outer_rotation"
     )
 
-    // Wave phase offset — drives ripple motion along the circle
     val phase by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = (2 * PI).toFloat(),
@@ -135,7 +139,6 @@ fun CircularWavySpinner(
         label = "wave_phase"
     )
 
-    // Amplitude pulse — squiggles breathe in and out
     val ampScale by infiniteTransition.animateFloat(
         initialValue = 0.5f,
         targetValue = 1.0f,
@@ -146,7 +149,6 @@ fun CircularWavySpinner(
         label = "amp_pulse"
     )
 
-    // Pre-compute sin table size: enough points for smooth appearance
     val steps = 120
     val sinTable = remember(steps) {
         FloatArray(steps + 1) { i ->
@@ -160,7 +162,6 @@ fun CircularWavySpinner(
         val baseRadius = (size.minDimension / 2f) - swPx * 1.8f
         val amp = swPx * 1.1f * ampScale
 
-        // Track ring
         drawCircle(
             color = trackColor,
             radius = baseRadius,
@@ -168,13 +169,12 @@ fun CircularWavySpinner(
             style = Stroke(width = swPx, cap = StrokeCap.Round)
         )
 
-        // Squiggly wave arc — rotated by outer rotation
         rotate(rotation, pivot = center) {
             val path = Path()
             for (i in 0..steps) {
                 val theta = i.toFloat() / steps * (2 * PI).toFloat()
                 val r = baseRadius + amp * sinTable[i] *
-                    cos(theta * waveCount - phase) // modulate with cos for directionality
+                    cos(theta * waveCount - phase)
                 val x = center.x + r * cos(theta)
                 val y = center.y + r * sin(theta)
                 if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
@@ -187,5 +187,257 @@ fun CircularWavySpinner(
                 style = Stroke(width = swPx * 0.85f, cap = StrokeCap.Round)
             )
         }
+    }
+}
+
+/**
+ * Radar Ripple Wave Loader (§7.4).
+ * Concentric expanding radar rings with cascading opacity and scale.
+ */
+@Composable
+fun RadarRippleLoader(
+    modifier: Modifier = Modifier.size(64.dp),
+    color: Color = MaterialTheme.colorScheme.primary
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "RadarTransition")
+
+    val progress1 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "Ripple1"
+    )
+
+    val progress2 by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, delayMillis = 500, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "Ripple2"
+    )
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val maxRadius = size.minDimension / 2f
+
+            listOf(progress1, progress2).forEach { progress ->
+                val radius = maxRadius * progress
+                val alpha = (1f - progress).coerceIn(0f, 1f)
+                drawCircle(
+                    color = color.copy(alpha = alpha),
+                    radius = radius,
+                    style = Stroke(width = 2.5.dp.toPx())
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Rotating Geometric Arc Spinner (§7.3).
+ */
+@Composable
+fun RotatingArcSpinner(
+    modifier: Modifier = Modifier.size(36.dp),
+    color: Color = MaterialTheme.colorScheme.primary,
+    strokeWidth: Dp = 3.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "SpinnerRotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "Rotation"
+    )
+
+    Canvas(modifier = modifier) {
+        rotate(rotation) {
+            drawArc(
+                color = color,
+                startAngle = 0f,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+            )
+        }
+    }
+}
+
+/**
+ * Segmented Progress Bar (§7.5).
+ */
+@Composable
+fun SegmentedProgressBar(
+    totalSegments: Int = 5,
+    completedSegments: Int = 3,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        for (i in 0 until totalSegments) {
+            val isFilled = i < completedSegments
+            val segmentColor = if (isFilled) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHighest
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(segmentColor)
+            )
+        }
+    }
+}
+
+/**
+ * Sweeping Gradient Progress Bar (§7.5).
+ */
+@Composable
+fun SweepingGradientProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "SweepTransition")
+    val offsetAnimation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 600f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "SweepOffset"
+    )
+
+    val gradientBrush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.primary
+        ),
+        start = Offset(offsetAnimation, 0f),
+        end = Offset(offsetAnimation + 300f, 0f)
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .background(gradientBrush)
+        )
+    }
+}
+
+/**
+ * Skeleton Shimmer Loading Modifier (§7.8).
+ */
+fun Modifier.shimmerEffect(): Modifier = composed {
+    val transition = rememberInfiniteTransition(label = "ShimmerTransition")
+    val translateAnimation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ShimmerTranslate"
+    )
+
+    val shimmerColors = listOf(
+        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.2f),
+        MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+    )
+
+    background(
+        brush = Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(translateAnimation - 200f, translateAnimation - 200f),
+            end = Offset(translateAnimation, translateAnimation)
+        )
+    )
+}
+
+/**
+ * Elastic Tooltip Slider (§7.6).
+ * Interactive slider that pops and scales the thumb on press with a floating value bubble.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ElasticTooltipSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    labelFormatter: (Float) -> String = { "${(it * 100).toInt()}%" }
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isDragged by interactionSource.collectIsDraggedAsState()
+    val haptics = LocalHapticFeedback.current
+
+    val thumbScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isDragged) 1.35f else 1.0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "ThumbScale"
+    )
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (isDragged) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = if (isDragged) 6.dp else 2.dp
+            ) {
+                Text(
+                    text = labelFormatter(value),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isDragged) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        Slider(
+            value = value,
+            onValueChange = {
+                onValueChange(it)
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            },
+            valueRange = valueRange,
+            interactionSource = interactionSource,
+            thumb = {
+                SliderDefaults.Thumb(
+                    interactionSource = interactionSource,
+                    modifier = Modifier.scale(thumbScale)
+                )
+            }
+        )
     }
 }
