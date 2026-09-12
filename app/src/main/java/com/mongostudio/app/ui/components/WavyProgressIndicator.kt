@@ -106,87 +106,67 @@ fun WavyProgressIndicator(
 }
 
 /**
- * Material 3 Expressive Circular Wavy Spinner (§7.2).
+ * Material 3 Expressive Circular Spinner (§7.2).
+ * Clean, fluid rotating indeterminate arc with subtle background track and rounded caps.
  */
 @Composable
 fun CircularWavySpinner(
     modifier: Modifier = Modifier,
-    sizeDp: Dp = 32.dp,
+    sizeDp: Dp = 36.dp,
     color: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = color.copy(alpha = 0.15f),
     waveCount: Int = 5,
-    strokeWidth: Dp = 3.dp
+    strokeWidth: Dp = 3.5.dp
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "circular_wavy")
+    val infiniteTransition = rememberInfiniteTransition(label = "expressive_circular_spinner")
 
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1800, easing = LinearEasing),
+            animation = tween(durationMillis = 1100, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "outer_rotation"
+        label = "spinner_rotation"
     )
 
-    val phase by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2 * PI).toFloat(),
+    val sweepAngle by infiniteTransition.animateFloat(
+        initialValue = 45f,
+        targetValue = 280f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 900, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "wave_phase"
-    )
-
-    val ampScale by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 750, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "amp_pulse"
+        label = "spinner_sweep"
     )
 
-    val steps = 120
-    val sinTable = remember(steps) {
-        FloatArray(steps + 1) { i ->
-            sin(i.toFloat() / steps * (2 * PI).toFloat())
-        }
-    }
-
     Canvas(modifier = modifier.size(sizeDp)) {
-        val center = Offset(size.width / 2f, size.height / 2f)
         val swPx = strokeWidth.toPx()
-        val baseRadius = (size.minDimension / 2f) - swPx * 1.8f
-        val amp = swPx * 1.1f * ampScale
+        val diameter = size.minDimension - swPx
+        val topLeft = Offset(swPx / 2f, swPx / 2f)
+        val arcSize = Size(diameter, diameter)
 
-        drawCircle(
+        // Subtle circular track
+        drawArc(
             color = trackColor,
-            radius = baseRadius,
-            center = center,
+            startAngle = 0f,
+            sweepAngle = 360f,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
             style = Stroke(width = swPx, cap = StrokeCap.Round)
         )
 
-        rotate(rotation, pivot = center) {
-            val path = Path()
-            for (i in 0..steps) {
-                val theta = i.toFloat() / steps * (2 * PI).toFloat()
-                val r = baseRadius + amp * sinTable[i] *
-                    cos(theta * waveCount - phase)
-                val x = center.x + r * cos(theta)
-                val y = center.y + r * sin(theta)
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            path.close()
-
-            drawPath(
-                path = path,
-                color = color,
-                style = Stroke(width = swPx * 0.85f, cap = StrokeCap.Round)
-            )
-        }
+        // Smooth dynamic rotating arc with rounded caps
+        drawArc(
+            color = color,
+            startAngle = rotation,
+            sweepAngle = sweepAngle,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = swPx, cap = StrokeCap.Round)
+        )
     }
 }
 

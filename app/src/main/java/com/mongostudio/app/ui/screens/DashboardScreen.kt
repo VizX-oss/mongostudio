@@ -65,8 +65,6 @@ fun DashboardScreen(
                 subtitle = "v${uiState.activeClusterVersion ?: "Unknown"} • Wire TLS",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onRefreshClick = { viewModel.loadOverview() },
                 onConsoleClick = onNavigateToConsole,
                 onSettingsClick = onNavigateToSettings,

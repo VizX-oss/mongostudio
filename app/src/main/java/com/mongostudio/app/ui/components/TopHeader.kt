@@ -26,30 +26,32 @@ fun TopHeader(
     subtitle: String? = null,
     isConnectedToCluster: Boolean,
     pingMs: Long? = null,
-    isDark: Boolean = true,
     onBackClick: (() -> Unit)? = null,
     onRefreshClick: (() -> Unit)? = null,
     onConsoleClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)? = null,
     onThemeClick: (() -> Unit)? = null,
-    onToggleDayNight: (() -> Unit)? = null,
     onDisconnectClick: (() -> Unit)? = null
 ) {
     val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
 
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 2.dp,
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            tonalElevation = 3.dp,
+            shadowElevation = 3.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -65,7 +67,7 @@ fun TopHeader(
                                 onBackClick()
                             },
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .pressMorph()
@@ -77,7 +79,7 @@ fun TopHeader(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
 
                     Column(verticalArrangement = Arrangement.Center) {
@@ -104,7 +106,7 @@ fun TopHeader(
                 // Actions & Status
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     // Live Status Badge
                     ExpressiveLiveBadge(
@@ -117,17 +119,6 @@ fun TopHeader(
                         activeColor = MaterialTheme.colorScheme.primary,
                         inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
-
-                    // Day/Night Morph Switch
-                    if (onToggleDayNight != null) {
-                        DayNightMorphToggle(
-                            isDark = isDark,
-                            onToggle = {
-                                haptics.performClickFeedback()
-                                onToggleDayNight()
-                            }
-                        )
-                    }
 
                     if (onRefreshClick != null) {
                         IconButton(

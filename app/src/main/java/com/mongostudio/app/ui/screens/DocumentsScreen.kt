@@ -70,8 +70,6 @@ fun DocumentsScreen(
                 subtitle = "$dbName • Documents",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack,
                 onRefreshClick = { viewModel.runQuery() }
             )
@@ -371,22 +369,36 @@ fun DocumentsScreen(
                 StaggerEntrance(index = index, staggerMs = 20L) {
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
-                            if (value == SwipeToDismissBoxValue.EndToStart) {
-                                haptic.performConfirmFeedback()
-                                docToDeleteId = docId
-                                false
-                            } else false
+                            when (value) {
+                                SwipeToDismissBoxValue.EndToStart -> {
+                                    haptic.performConfirmFeedback()
+                                    docToDeleteId = docId
+                                    false
+                                }
+                                SwipeToDismissBoxValue.StartToEnd -> {
+                                    haptic.performClickFeedback()
+                                    editingDocId = docId
+                                    editingDocJson = jsonString
+                                    false
+                                }
+                                SwipeToDismissBoxValue.Settled -> false
+                            }
                         }
                     )
 
                     SwipeToDismissBox(
                         state = dismissState,
-                        enableDismissFromStartToEnd = false,
+                        enableDismissFromStartToEnd = true,
+                        enableDismissFromEndToStart = true,
                         backgroundContent = {
+                            val isEdit = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd || dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+                            val isDelete = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart || dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
                             val bgCol by animateColorAsState(
-                                targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                                    MaterialTheme.colorScheme.errorContainer
-                                } else Color.Transparent,
+                                targetValue = when {
+                                    isEdit -> MaterialTheme.colorScheme.primaryContainer
+                                    isDelete -> MaterialTheme.colorScheme.errorContainer
+                                    else -> Color.Transparent
+                                },
                                 label = "DismissBg"
                             )
                             Box(
@@ -394,14 +406,40 @@ fun DocumentsScreen(
                                     .fillMaxSize()
                                     .clip(MaterialTheme.shapes.large)
                                     .background(bgCol)
-                                    .padding(end = 20.dp),
-                                contentAlignment = Alignment.CenterEnd
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = if (isEdit) Alignment.CenterStart else Alignment.CenterEnd
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
+                                if (isEdit) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit",
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Edit Document",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                } else if (isDelete) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Delete",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    }
+                                }
                             }
                         }
                     ) {
@@ -446,7 +484,10 @@ fun DocumentsScreen(
                                     }
 
                                     // Document Card Actions
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
                                         FilledTonalButton(
                                             onClick = {
                                                 haptic.performClickFeedback()
@@ -454,14 +495,13 @@ fun DocumentsScreen(
                                                 editingDocJson = jsonString
                                             },
                                             shape = CircleShape,
-                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                            modifier = Modifier.height(36.dp)
                                         ) {
                                             Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text("Edit", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                                         }
-
-                                        Spacer(modifier = Modifier.width(6.dp))
 
                                         IconButton(
                                             onClick = {
@@ -469,7 +509,10 @@ fun DocumentsScreen(
                                                 clip.setPrimaryClip(ClipData.newPlainText("Document JSON", jsonString))
                                                 Toast.makeText(context, "Copied JSON to clipboard", Toast.LENGTH_SHORT).show()
                                             },
-                                            modifier = Modifier.size(34.dp)
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                         ) {
                                             Icon(Icons.Default.ContentCopy, contentDescription = "Copy JSON", modifier = Modifier.size(18.dp))
                                         }
@@ -479,7 +522,10 @@ fun DocumentsScreen(
                                                 haptic.performClickFeedback()
                                                 docToDeleteId = docId
                                             },
-                                            modifier = Modifier.size(34.dp)
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
                                         ) {
                                             Icon(
                                                 Icons.Default.DeleteOutline,

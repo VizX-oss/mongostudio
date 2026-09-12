@@ -13,7 +13,7 @@ data class ThemeSettings(
     val followSystemTheme: Boolean = true,
     val isDarkMode: Boolean = true,
     val isAmoledMode: Boolean = false,
-    val palettePreset: ColorPalettePreset = ColorPalettePreset.EMERALD_PINE
+    val palettePreset: ColorPalettePreset = ColorPalettePreset.DYNAMIC
 ) {
     val themeMode: AppThemeMode
         get() = when {
@@ -25,7 +25,8 @@ data class ThemeSettings(
 
     fun toThemeConfig(): ThemeConfig = ThemeConfig(
         themeMode = themeMode,
-        palettePreset = palettePreset
+        palettePreset = palettePreset,
+        isAmoledMode = isAmoledMode
     )
 }
 
@@ -44,17 +45,24 @@ class ThemePreferences(context: Context) {
     val themeSettings: StateFlow<ThemeSettings> = _themeSettings.asStateFlow()
 
     private fun loadPalettePreset(): ColorPalettePreset {
-        val savedName = prefs.getString(KEY_PALETTE_PRESET, ColorPalettePreset.EMERALD_PINE.name)
+        val savedName = prefs.getString(KEY_PALETTE_PRESET, ColorPalettePreset.DYNAMIC.name)
         return try {
-            ColorPalettePreset.valueOf(savedName ?: ColorPalettePreset.EMERALD_PINE.name)
+            ColorPalettePreset.valueOf(savedName ?: ColorPalettePreset.DYNAMIC.name)
         } catch (_: Exception) {
-            ColorPalettePreset.EMERALD_PINE
+            ColorPalettePreset.DYNAMIC
         }
     }
 
     fun setFollowSystemTheme(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_FOLLOW_SYSTEM, enabled).apply()
-        _themeSettings.value = _themeSettings.value.copy(followSystemTheme = enabled)
+        val newPreset = if (enabled) ColorPalettePreset.DYNAMIC else _themeSettings.value.palettePreset
+        prefs.edit()
+            .putBoolean(KEY_FOLLOW_SYSTEM, enabled)
+            .putString(KEY_PALETTE_PRESET, newPreset.name)
+            .apply()
+        _themeSettings.value = _themeSettings.value.copy(
+            followSystemTheme = enabled,
+            palettePreset = newPreset
+        )
     }
 
     fun setDarkMode(enabled: Boolean) {
@@ -68,8 +76,15 @@ class ThemePreferences(context: Context) {
     }
 
     fun setPalettePreset(preset: ColorPalettePreset) {
-        prefs.edit().putString(KEY_PALETTE_PRESET, preset.name).apply()
-        _themeSettings.value = _themeSettings.value.copy(palettePreset = preset)
+        val newFollowSystem = (preset == ColorPalettePreset.DYNAMIC)
+        prefs.edit()
+            .putString(KEY_PALETTE_PRESET, preset.name)
+            .putBoolean(KEY_FOLLOW_SYSTEM, newFollowSystem)
+            .apply()
+        _themeSettings.value = _themeSettings.value.copy(
+            palettePreset = preset,
+            followSystemTheme = newFollowSystem
+        )
     }
 
     fun setThemeMode(mode: AppThemeMode) {

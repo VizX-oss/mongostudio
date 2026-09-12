@@ -57,8 +57,6 @@ fun IndexesScreen(
                 subtitle = "$dbName • $colName",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack,
                 onRefreshClick = {
                     haptic.performClickFeedback()
@@ -184,13 +182,17 @@ fun IndexesScreen(
                                                 onClick = {
                                                     haptic.performClickFeedback()
                                                     indexToDrop = idx
-                                                }
+                                                },
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
                                             ) {
                                                 Icon(
                                                     Icons.Default.DeleteOutline,
                                                     contentDescription = "Drop index",
                                                     tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(20.dp)
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
                                         }

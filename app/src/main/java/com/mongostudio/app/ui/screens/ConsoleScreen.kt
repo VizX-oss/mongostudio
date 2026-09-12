@@ -45,8 +45,6 @@ fun ConsoleScreen(
                 subtitle = "Wire Protocol Terminal",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack
             )
         },

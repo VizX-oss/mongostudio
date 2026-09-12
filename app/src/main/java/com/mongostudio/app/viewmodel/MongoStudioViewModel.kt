@@ -176,19 +176,19 @@ class MongoStudioViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun disconnect() {
+        _uiState.value = _uiState.value.copy(
+            isConnectedToCluster = false,
+            activeClusterName = null,
+            activeClusterVersion = null,
+            activeClusterPingMs = null,
+            overview = null,
+            selectedDatabase = null,
+            collections = emptyList(),
+            selectedCollection = null,
+            queryResult = null
+        )
         viewModelScope.launch {
             DirectMongoService.disconnect()
-            _uiState.value = _uiState.value.copy(
-                isConnectedToCluster = false,
-                activeClusterName = null,
-                activeClusterVersion = null,
-                activeClusterPingMs = null,
-                overview = null,
-                selectedDatabase = null,
-                collections = emptyList(),
-                selectedCollection = null,
-                queryResult = null
-            )
         }
     }
 

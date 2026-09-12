@@ -6,13 +6,13 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 enum class ColorPalettePreset(val displayName: String) {
+    DYNAMIC("Dynamic Monet"),
     EMERALD_PINE("Emerald Pine"),
     VIOLET("Violet Expressive"),
     OCEAN_TEAL("Ocean Teal"),
     SUNSET_AMBER("Sunset Amber"),
     CRIMSON_BLOOM("Crimson Bloom"),
-    NORDIC_SLATE("Nordic Slate"),
-    DYNAMIC("Dynamic Monet")
+    NORDIC_SLATE("Nordic Slate")
 }
 
 data class PaletteTheme(

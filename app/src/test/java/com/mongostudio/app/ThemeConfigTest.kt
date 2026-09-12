@@ -9,6 +9,11 @@ import org.junit.Test
 class ThemeConfigTest {
 
     @Test
+    fun testDynamicPaletteIsFirst() {
+        assertEquals(ColorPalettePreset.DYNAMIC, ColorPalettePreset.entries.first())
+    }
+
+    @Test
     fun testAllPalettePresetsHaveValidColorSchemes() {
         for (preset in ColorPalettePreset.entries) {
             val theme = AppPalettes.getPreset(preset)

@@ -180,6 +180,7 @@ fun DayNightMorphToggle(
 /**
  * Material 3 Expressive Velocity-Aware Auto-Hiding Scrollbar (§8.4).
  * Dynamic vertical scrollbar indicator that highlights during flings and fades out when stationary.
+ * Calculates smooth subpixel offset and proportional thumb height without jitter.
  */
 @Composable
 fun VelocityAwareScrollbar(
@@ -190,27 +191,42 @@ fun VelocityAwareScrollbar(
     val isScrolling = listState.isScrollInProgress
     val alpha by animateFloatAsState(
         targetValue = if (isScrolling) 0.85f else 0f,
-        animationSpec = tween(durationMillis = if (isScrolling) 150 else 600),
+        animationSpec = tween(durationMillis = if (isScrolling) 150 else 500),
         label = "ScrollbarAlpha"
     )
 
     Canvas(
         modifier = modifier
-            .width(5.dp)
+            .width(4.dp)
             .fillMaxHeight()
+            .padding(vertical = 8.dp)
     ) {
-        val totalItems = listState.layoutInfo.totalItemsCount
-        val visibleItems = listState.layoutInfo.visibleItemsInfo.size
-        if (totalItems > 0 && visibleItems > 0) {
-            val thumbHeight = (size.height * (visibleItems.toFloat() / totalItems)).coerceAtLeast(32.dp.toPx())
-            val firstVisibleIndex = listState.firstVisibleItemIndex.toFloat()
-            val thumbY = (size.height - thumbHeight) * (firstVisibleIndex / (totalItems - visibleItems).coerceAtLeast(1))
+        val layoutInfo = listState.layoutInfo
+        val totalItems = layoutInfo.totalItemsCount
+        val visibleItems = layoutInfo.visibleItemsInfo
+        if (totalItems <= 1 || visibleItems.isEmpty() || alpha <= 0f) return@Canvas
+
+        val avgItemHeight = visibleItems.sumOf { it.size }.toFloat() / visibleItems.size.coerceAtLeast(1)
+        val estimatedTotalHeight = avgItemHeight * totalItems
+        val viewportHeight = size.height
+
+        if (estimatedTotalHeight > viewportHeight) {
+            val thumbHeight = (viewportHeight * (viewportHeight / estimatedTotalHeight))
+                .coerceIn(36.dp.toPx(), viewportHeight * 0.35f)
+
+            val scrollableRange = estimatedTotalHeight - viewportHeight
+            val firstItemOffset = listState.firstVisibleItemScrollOffset.toFloat()
+            val currentScroll = (listState.firstVisibleItemIndex * avgItemHeight + firstItemOffset)
+                .coerceIn(0f, scrollableRange)
+
+            val progress = (currentScroll / scrollableRange).coerceIn(0f, 1f)
+            val thumbY = (viewportHeight - thumbHeight) * progress
 
             drawRoundRect(
                 color = color.copy(alpha = alpha),
                 topLeft = Offset(0f, thumbY),
                 size = Size(size.width, thumbHeight),
-                cornerRadius = CornerRadius(2.5.dp.toPx())
+                cornerRadius = CornerRadius(size.width / 2f, size.width / 2f)
             )
         }
     }

@@ -4,6 +4,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -69,8 +71,6 @@ fun ConnectionScreen(
                 title = "MongoDB Studio",
                 subtitle = "Wire TLS Client",
                 isConnectedToCluster = false,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onThemeClick = { showThemeDialog = true },
                 onSettingsClick = onNavigateToSettings,
                 onRefreshClick = { viewModel.loadSavedConnections() }
@@ -111,31 +111,27 @@ fun ConnectionScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                // App Icon Logo Container
+                                // App Icon Logo Container (Actual App Launcher Icon)
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    MaterialTheme.colorScheme.primary,
-                                                    MaterialTheme.colorScheme.tertiary
-                                                )
-                                            )
-                                        )
                                         .border(
                                             width = 1.dp,
-                                            color = Color.White.copy(alpha = 0.35f),
+                                            color = MaterialTheme.colorScheme.outlineVariant,
                                             shape = RoundedCornerShape(16.dp)
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Storage,
-                                        contentDescription = "MongoDB Studio Logo",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(32.dp)
+                                    Image(
+                                        painter = painterResource(id = com.mongostudio.app.R.drawable.ic_launcher_background),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                    Image(
+                                        painter = painterResource(id = com.mongostudio.app.R.drawable.ic_launcher_foreground),
+                                        contentDescription = "MongoDB Studio App Icon",
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                 }
 
@@ -226,38 +222,12 @@ fun ConnectionScreen(
                                 .padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "Cluster Connection",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                val isAtlas = uriText.startsWith("mongodb+srv://", ignoreCase = true)
-                                AssistChip(
-                                    onClick = {},
-                                    label = {
-                                        Text(
-                                            if (isAtlas) "Atlas SRV" else "Direct Host",
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            if (isAtlas) Icons.Default.CloudQueue else Icons.Default.Dns,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = if (isAtlas) MaterialTheme.colorScheme.primary else SkyAccent
-                                        )
-                                    },
-                                    shape = CircleShape
-                                )
-                            }
+                            Text(
+                                text = "Cluster Connection",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
 
                             // Presets Row with Connected Buttons
                             Row(
@@ -558,22 +528,37 @@ fun ConnectionScreen(
                         StaggerEntrance(index = index, staggerMs = 30L) {
                             val dismissState = rememberSwipeToDismissBoxState(
                                 confirmValueChange = { value ->
-                                    if (value == SwipeToDismissBoxValue.EndToStart) {
-                                        haptic.performConfirmFeedback()
-                                        itemToDelete = saved
-                                        false // Don't auto-dismiss until confirmed in dialog
-                                    } else false
+                                    when (value) {
+                                        SwipeToDismissBoxValue.EndToStart -> {
+                                            haptic.performConfirmFeedback()
+                                            itemToDelete = saved
+                                            false // Don't auto-dismiss until confirmed in dialog
+                                        }
+                                        SwipeToDismissBoxValue.StartToEnd -> {
+                                            haptic.performClickFeedback()
+                                            itemToEdit = saved
+                                            editNameText = saved.name
+                                            editUriText = ""
+                                            false
+                                        }
+                                        SwipeToDismissBoxValue.Settled -> false
+                                    }
                                 }
                             )
 
                             SwipeToDismissBox(
                                 state = dismissState,
-                                enableDismissFromStartToEnd = false,
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true,
                                 backgroundContent = {
+                                    val isEdit = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd || dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+                                    val isDelete = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart || dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
                                     val bgCol by animateColorAsState(
-                                        targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
-                                            MaterialTheme.colorScheme.errorContainer
-                                        } else Color.Transparent,
+                                        targetValue = when {
+                                            isEdit -> MaterialTheme.colorScheme.primaryContainer
+                                            isDelete -> MaterialTheme.colorScheme.errorContainer
+                                            else -> Color.Transparent
+                                        },
                                         label = "DismissBg"
                                     )
                                     Box(
@@ -581,14 +566,40 @@ fun ConnectionScreen(
                                             .fillMaxSize()
                                             .clip(MaterialTheme.shapes.large)
                                             .background(bgCol)
-                                            .padding(end = 20.dp),
-                                        contentAlignment = Alignment.CenterEnd
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = if (isEdit) Alignment.CenterStart else Alignment.CenterEnd
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete",
-                                            tint = MaterialTheme.colorScheme.onErrorContainer
-                                        )
+                                        if (isEdit) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Edit,
+                                                    contentDescription = "Edit session",
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Edit Session",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            }
+                                        } else if (isDelete) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = "Delete",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = "Delete",
+                                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             ) {
@@ -631,7 +642,7 @@ fun ConnectionScreen(
                                                 )
                                             }
 
-                                            Row {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                                 IconButton(
                                                     onClick = {
                                                         haptic.performClickFeedback()
@@ -639,7 +650,10 @@ fun ConnectionScreen(
                                                         editNameText = saved.name
                                                         editUriText = ""
                                                     },
-                                                    modifier = Modifier.size(34.dp)
+                                                    modifier = Modifier
+                                                        .size(36.dp)
+                                                        .clip(CircleShape)
+                                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                                 ) {
                                                     Icon(
                                                         Icons.Default.Edit,
@@ -654,7 +668,10 @@ fun ConnectionScreen(
                                                         haptic.performClickFeedback()
                                                         itemToDelete = saved
                                                     },
-                                                    modifier = Modifier.size(34.dp)
+                                                    modifier = Modifier
+                                                        .size(36.dp)
+                                                        .clip(CircleShape)
+                                                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f))
                                                 ) {
                                                     Icon(
                                                         Icons.Default.DeleteOutline,

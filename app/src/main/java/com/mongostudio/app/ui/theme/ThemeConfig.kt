@@ -17,7 +17,8 @@ enum class AppThemeMode(val label: String) {
 
 data class ThemeConfig(
     val themeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
-    val palettePreset: ColorPalettePreset = ColorPalettePreset.EMERALD_PINE
+    val palettePreset: ColorPalettePreset = ColorPalettePreset.DYNAMIC,
+    val isAmoledMode: Boolean = false
 )
 
 val LocalThemeConfig = compositionLocalOf { ThemeConfig() }

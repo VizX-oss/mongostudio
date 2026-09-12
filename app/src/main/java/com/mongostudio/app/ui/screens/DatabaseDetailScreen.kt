@@ -56,8 +56,6 @@ fun DatabaseDetailScreen(
                 subtitle = "Database Explorer",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack,
                 onThemeClick = { showThemeDialog = true },
                 onRefreshClick = { viewModel.loadCollections(dbName) }

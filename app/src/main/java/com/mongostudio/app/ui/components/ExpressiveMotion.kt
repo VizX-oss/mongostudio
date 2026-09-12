@@ -89,39 +89,43 @@ fun Modifier.pressMorph(
 }
 
 /**
- * Material 3 Expressive Staggered Entrance (§9.2).
- * Fades and slides in list items with spring physics.
- * Key stability: uses `key = Unit` so re-parenting doesn't reset.
+ * Material 3 Expressive Parallel Staggered Entrance (§9.2).
+ * Runs smooth GPU-accelerated alpha & slide animations in parallel via graphicsLayer
+ * WITHOUT blocking scroll momentum, causing layout jumps, or delaying LazyColumn items.
  */
 @Composable
 fun StaggerEntrance(
     index: Int,
-    staggerMs: Long = 30L,
+    staggerMs: Long = 20L,
     modifier: Modifier = Modifier,
-    content: @Composable AnimatedVisibilityScope.() -> Unit
+    content: @Composable () -> Unit
 ) {
-    var visible by remember { mutableStateOf(false) }
+    val animatable = remember { androidx.compose.animation.core.Animatable(if (index < 8) 0f else 1f) }
+
     LaunchedEffect(Unit) {
-        val delayMs = (index * staggerMs).coerceAtMost(300L) // cap max stagger
-        delay(delayMs)
-        visible = true
+        if (index < 8) {
+            val delayMs = (index * staggerMs).coerceAtMost(160L)
+            delay(delayMs)
+            animatable.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = 0.85f,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+        }
     }
 
-    AnimatedVisibility(
-        visible = visible,
-        modifier = modifier,
-        enter = fadeIn(animationSpec = ExpressiveEffectsSpec) +
-            slideInVertically(
-                animationSpec = ExpressiveSlideSpatialSpec,
-                initialOffsetY = { it / 5 }
-            ),
-        exit = fadeOut(animationSpec = tween(120)) +
-            slideOutVertically(
-                animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessHigh),
-                targetOffsetY = { -it / 5 }
-            ),
-        content = content
-    )
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                val progress = animatable.value
+                alpha = progress
+                translationY = (1f - progress) * 24f
+            }
+    ) {
+        content()
+    }
 }
 
 /**

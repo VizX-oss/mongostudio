@@ -56,8 +56,6 @@ fun AggregationScreen(
                 subtitle = "$dbName • $colName",
                 isConnectedToCluster = true,
                 pingMs = uiState.activeClusterPingMs,
-                isDark = themeSettings.isDarkMode,
-                onToggleDayNight = { viewModel.setDarkMode(!themeSettings.isDarkMode) },
                 onBackClick = onNavigateBack
             )
         },

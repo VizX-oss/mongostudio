@@ -24,10 +24,13 @@ fun MongoStudioTheme(
         AppThemeMode.AMOLED -> true
     }
 
+    val useAmoled = (themeConfig.themeMode == AppThemeMode.AMOLED) ||
+        (themeConfig.isAmoledMode && isDark)
+
     val context = LocalContext.current
     val rawColorScheme = when {
         themeConfig.palettePreset == ColorPalettePreset.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (themeConfig.themeMode == AppThemeMode.AMOLED) {
+            if (useAmoled) {
                 val dynDark = dynamicDarkColorScheme(context)
                 createAmoledColorScheme(
                     dynDark.primary, dynDark.onPrimary, dynDark.primaryContainer, dynDark.onPrimaryContainer,
@@ -42,7 +45,7 @@ fun MongoStudioTheme(
         else -> {
             val palette = AppPalettes.getPreset(themeConfig.palettePreset)
             when {
-                themeConfig.themeMode == AppThemeMode.AMOLED -> palette.amoled
+                useAmoled -> palette.amoled
                 isDark -> palette.dark
                 else -> palette.light
             }
