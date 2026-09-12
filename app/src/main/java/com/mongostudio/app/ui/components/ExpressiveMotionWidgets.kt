@@ -144,7 +144,8 @@ fun PressAndHoldTriggerButton(
 fun DayNightMorphToggle(
     isDark: Boolean,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sizeDp: androidx.compose.ui.unit.Dp = 40.dp
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isDark) 180f else 0f,
@@ -159,7 +160,7 @@ fun DayNightMorphToggle(
 
     Box(
         modifier = modifier
-            .size(40.dp)
+            .size(sizeDp)
             .clip(CircleShape)
             .background(containerColor)
             .clickable { onToggle() },

@@ -45,6 +45,7 @@ data class UiState(
 class MongoStudioViewModel(application: Application) : AndroidViewModel(application) {
     val vault = EncryptedVault(application)
     val themePreferences = ThemePreferences(application)
+    val themeSettings: StateFlow<ThemeSettings> = themePreferences.themeSettings
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()

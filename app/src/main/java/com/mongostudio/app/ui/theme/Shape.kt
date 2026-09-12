@@ -107,9 +107,8 @@ object ExpressiveShapesCatalog {
         rounding = CornerRounding(radius = 0.4f, smoothing = 0.2f)
     )
 
-    fun pillPolygon(): RoundedPolygon = RoundedPolygon.rectangle(
-        width = 1f,
-        height = 1f,
+    fun pillPolygon(): RoundedPolygon = RoundedPolygon(
+        numVertices = 4,
         rounding = CornerRounding(radius = 0.5f)
     )
 
