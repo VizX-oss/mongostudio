@@ -25,7 +25,6 @@ fun ConfirmDialog(
     dismissText: String = "Cancel",
     isDestructive: Boolean = true,
     requireHoldToConfirm: Boolean = false,
-    holdDurationMs: Long = 1200L,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -71,7 +70,7 @@ fun ConfirmDialog(
                 )
                 if (requireHoldToConfirm) {
                     Text(
-                        text = "Press and hold to confirm action:",
+                        text = "Press and hold the icon button below to confirm action:",
                         style = MaterialTheme.typography.labelSmall,
                         color = accentColor,
                         fontWeight = FontWeight.SemiBold
@@ -82,9 +81,8 @@ fun ConfirmDialog(
         confirmButton = {
             if (requireHoldToConfirm) {
                 PressAndHoldTriggerButton(
-                    text = confirmText,
-                    holdDurationMs = holdDurationMs,
-                    color = accentColor,
+                    tintColor = accentColor,
+                    backgroundColor = accentColor.copy(alpha = 0.15f),
                     onTrigger = {
                         haptic.performConfirmFeedback()
                         onConfirm()

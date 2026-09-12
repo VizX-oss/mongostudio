@@ -580,7 +580,6 @@ fun DocumentsScreen(
             dismissText = "Cancel",
             isDestructive = true,
             requireHoldToConfirm = true,
-            holdDurationMs = 1000L,
             onConfirm = {
                 docToDeleteId?.let { viewModel.deleteDocument(it) }
                 docToDeleteId = null

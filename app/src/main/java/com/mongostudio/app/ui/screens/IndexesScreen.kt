@@ -255,7 +255,6 @@ fun IndexesScreen(
             dismissText = "Cancel",
             isDestructive = true,
             requireHoldToConfirm = true,
-            holdDurationMs = 1000L,
             onConfirm = {
                 target.name?.let { viewModel.dropIndex(dbName, colName, it) }
                 indexToDrop = null
